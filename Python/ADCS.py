@@ -7,6 +7,8 @@ from mpl_toolkits.mplot3d import Axes3D
 from HSTdynamics import HSTdynamics
 from KeplerEq import KeplerEq
 from OE2ECI import OE2ECI
+from bdot_dynamics import bdot_dynamics 
+
 plt.close('all')
 
 ## Initialize and Save Constant Parameters
@@ -306,13 +308,14 @@ plt.show()
 
 # Initial Conditions
 om0 = np.array([0.25,0.25,2.5]).T # rad/s
-t0 = np.array([2019,01,31,12,37,20,20])
+t0 = np.array([2019,1,31,12,37,20,20])
 u_max = 10 
 r_eci, v_eci = OE2ECI(a, e, i, RAAN, w, anom, mu)
-x0 = np.append(r_eci, v_eci,om0)
+x0 = np.append(r_eci, v_eci)
+x0 = np.append(x0,om0)
 tspan = np.arange(0, 3*T, 10)
 
-x = odeint(bdot_dynamics, x0, tspan, args=(t0,u_max,J))
+x = odeint(bdot_dynamics, x0, tspan, args=(t0,u_max,J,mu))
 
 
 # orbital position 
@@ -330,7 +333,7 @@ ax.set_title('Detumbling Orbit Dynamics')
 plt.show()
 
 # Plot Omega
-om_true = x[:,6:8]
+om_true = x[:,6:9]
 plt.figure()
 f,(ax1,ax2,ax3)=plt.subplots(3,1,sharey=True)
 ax1.plot(tspan,om_true[:,0])
