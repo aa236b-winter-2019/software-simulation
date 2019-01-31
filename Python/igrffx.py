@@ -19,7 +19,7 @@ def igrffx(eci_vec,year,month,day,hour,minute,second,microsecond):
 	time = datetime(year, month, day, hour, minute, second, microsecond)
 
 	#get our lat long and alt from ECI 
-	geod = eci2geodetic(	eci, time, useastropy=True)
+	geod = eci2geodetic(eci_vec, time, useastropy=True)
 
 	latitude = geod[0][0] #degrees
 	longitude = geod[1][0] #degrees
