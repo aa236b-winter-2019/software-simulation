@@ -13,7 +13,6 @@ import astropy
 def igrffx(eci_vec,year,month,day,hour,minute,second,microsecond):
 	#eci_vec is a xyz vector in ECI 
 
-
 	#get time 
 	#datetime(year, month, day, hour, minute, second, microsecond)
 	time = datetime(year, month, day, hour, minute, second, microsecond)
@@ -40,7 +39,7 @@ def igrffx(eci_vec,year,month,day,hour,minute,second,microsecond):
 	ECEF = navpy.ned2ecef(NED, latitude, longitude, altitude)
 
 	#convert from ECEF to ECI
-	B_ECI = pymap3d.ecef2eci(	ECEF, time, useastropy=True)
+	B_ECI = pymap3d.ecef2eci(ECEF, time, useastropy=True)
 
 	return B_ECI
 
