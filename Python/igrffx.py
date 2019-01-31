@@ -1,24 +1,22 @@
-
-import igrf12
-import numpy
-import pymap3d
-from pymap3d import ecef2eci
-import navpy
-from navpy import ned2ecef
-import datetime
-from datetime import datetime
-import astropy
-
-
 def igrffx(eci_vec,year,month,day,hour,minute,second,microsecond):
+	import igrf12
+	import numpy
+	import pymap3d
+	from pymap3d import ecef2eci
+	import navpy
+	from navpy import ned2ecef
+	import datetime
+	from datetime import datetime
+	import astropy
 	#eci_vec is a xyz vector in ECI 
-
+	#output B_ECI is a 3 item array in units of nT
+	
 	#get time 
 	#datetime(year, month, day, hour, minute, second, microsecond)
 	time = datetime(year, month, day, hour, minute, second, microsecond)
 
 	#get our lat long and alt from ECI 
-	geod = eci2geodetic(eci_vec, time, useastropy=True)
+	geod = pymap3d.eci2geodetic(eci_vec, time, useastropy=True)
 
 	latitude = geod[0][0] #degrees
 	longitude = geod[1][0] #degrees
