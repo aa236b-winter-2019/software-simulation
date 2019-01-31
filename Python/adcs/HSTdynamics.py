@@ -11,6 +11,7 @@ def HSTdynamics(init_state, t, mu, J, rho):
 # Outputs:
 #   x_dot - linear equation containing ODEs for all states
     import numpy as np
+    from qmult import qmult
 
     if init_state.size == 3: # angular velocity
         # unpack initial state
