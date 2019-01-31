@@ -28,7 +28,7 @@ def bdot_dynamics(x0,t,t0,u_max,J,mu):
     time[4]=t0[4]+t/60
     time[5]=t%1
 
-    B=igrffx(eci_vec,time[0],time[1],time[2],time[3],time[4],time[5],time[6])
+    B=igrffx(eci_vec[0:3],time[0],time[1],time[2],time[3],time[4],time[5],time[6])
     # calculating torque
     B_moment_value = u_max*np.tanh(np.dot(om.T,B))
     B_moment_direction = np.cross(om,B) 
