@@ -10,8 +10,10 @@ def HSTdynamics(init_state, t, mu, J, rho):
 #
 # Outputs:
 #   x_dot - linear equation containing ODEs for all states
+
+    # TODO: renormalize q
     import numpy as np
-    from qmult import qmult
+    from subroutines import qkin
 
     if init_state.size == 3: # angular velocity
         # unpack initial state
@@ -34,11 +36,10 @@ def HSTdynamics(init_state, t, mu, J, rho):
         # unpack initial state
         om0 = init_state[:3]
         q0 = init_state[3:7]
-        qhat = qmult(q0)
 
         # matrix linear equation
         om_dot = -np.dot(np.linalg.inv(J), np.cross(om0, J.dot(om0) + rho))
-        q_dot = (1/2)*np.dot(qhat, np.append(om0, 0))
+        q_dot = qkin(q0, om0)
         x_dot = np.append(om_dot, q_dot)
     elif init_state.size == 13: # all states
         om0 = init_state[:3]
