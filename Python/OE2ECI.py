@@ -19,6 +19,7 @@ def OE2ECI(a, e, i, RAAN, w, anom, mu):
 #   r_eci - 3x1 vector of radius in ECI frame [km]
 #   v_eci - 3x1 vector of velocity in ECI frame [km/s]
 	import numpy as np
+	from KeplerEq import KeplerEq
 
 	n = np.sqrt(mu/a**3) # rad/s
 
@@ -42,18 +43,18 @@ def OE2ECI(a, e, i, RAAN, w, anom, mu):
 	# rotate vectors into ECI frame
 	r_eci = np.array(rotPeri2ECI.dot(rPeri))
 	v_eci = np.array(rotPeri2ECI.dot(vPeri))
-	return np.append(r_eci, v_eci)
+	return r_eci, v_eci
 
 def rotz(w):
 	import numpy as np
-	return np.matrix([[np.cos(w),-np.sin(w),0],
+	return np.array([[np.cos(w),-np.sin(w),0],
 					  [np.sin(w),np.cos(w),0],
 					  [0,0,1]
 					])
 
 def rotx(i):
 	import numpy as np
-	return np.matrix([[1,0,0],
+	return np.array([[1,0,0],
 					 [0,np.cos(i),-np.sin(i)],
 					 [0,np.sin(i),np.cos(i)]
 					])
