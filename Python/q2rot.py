@@ -1,4 +1,4 @@
-def quat2rot(q):
+def q2rot(q):
 	# Converts quaternion to corresponding rotation matrix
 	# Inputs:
 	#   q - Quaternion (4x1)
