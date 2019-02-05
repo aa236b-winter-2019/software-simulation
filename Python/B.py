@@ -38,10 +38,11 @@ om0 = np.array([0.25,0.25,2.5]).T # rad/s
 t0 = np.array([2019,1,31,12,37,20,20])
 u_max = 10 
 r_eci, v_eci = OE2ECI(a, e, i, RAAN, w, anom, mu)
-x0 = np.append(r_eci, v_eci)
-x0 = np.append(x0,om0)
-tspan = np.arange(0, 3*T, 10)
-
+tspan = np.arange(0, T, 10)
+q0 = np.array([0,0,0,1]).T # Identity Quaternion
+x0 = np.append(om0,q0)
+x0 = np.append(x0,r_eci)
+x0 = np.append(x0, v_eci)
 x = odeint(bdot_dynamics, x0, tspan, args=(t0,u_max,J,mu))
 
 

@@ -7,6 +7,7 @@ from mpl_toolkits.mplot3d import Axes3D
 
 from subroutines import *
 from HSTdynamics import HSTdynamics
+from igrffx import igrffx
 plt.close('all')
 
 ## Initialize and Save Constant Parameters
@@ -62,7 +63,33 @@ ax.set_title('HST Orbit Dynamics')
 #earthPlot(1)
 ax.axis('equal')
 # plt.hold(False)
+'''
+Ploting magnetic field
+'''
 
+t0 = np.array([2019,1,31,12,37,20,20])
+B=np.zeros((x.shape[0],3))
+
+for j in range(x.shape[0]):
+    time= np.copy(t0)
+    # converting time to required format
+    time[2]=t0[2]+tspan[j]/(3600*12)
+    t_rem=tspan[j]%(3600*12)
+    time[3]=t0[3]+t_rem/3600
+    t_rem=tspan[j]%3600
+    time[4]=t0[4]+tspan[j]/60
+    time[5]=tspan[j]%1
+
+    B[j][:]=igrffx(1000*x[j][:],time[0],time[1],time[2],time[3],time[4],time[5],time[6]).T
+#    B[j][:]=np.array([1,2,3])
+
+
+fig = plt.figure()
+ax = plt.axes( projection='3d')
+ax.quiver(x[::10,0],x[::10,1],x[::10,2],B[::10,0],B[::10,1],B[::10,2])
+ax.set_title('Magnetic field')
+ax.axis('equal')
+plt.show()
 ## Model HST Attitude Dynamics
 
 # From Superspin

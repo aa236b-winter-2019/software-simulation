@@ -14,7 +14,7 @@ def HSTdynamics(init_state, t, mu, J, rho):
     # TODO: renormalize q
     import numpy as np
     from subroutines import qkin
-
+    from subroutines import qmult
     if init_state.size == 3: # angular velocity
         # unpack initial state
         om0 = init_state
@@ -51,9 +51,9 @@ def HSTdynamics(init_state, t, mu, J, rho):
 
         # since flag == 0
         Tau_g = np.zeros((3,1))
-        D = np.zeros((3,1))
+#        D = np.zeros((3,1))
         Tau_D = np.zeros((3,1))
-        D = Q*D/1000 # rotate drag into interial frame
+#        D = Q*D/1000 # rotate drag into interial frame
         M = 11100 # mass of HST [kg]
 
         # matrix linear equation
