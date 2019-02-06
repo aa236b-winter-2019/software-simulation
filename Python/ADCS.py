@@ -90,7 +90,7 @@ for j in range(tspan.shape[0]):
     
 	#print(time[4])
 
-	B[j][:]=igrffx(1000*x[j][0:3],newtime).T
+	B[j][:]=igrffx(x[j][0:3],newtime).T
 
 print(B)
 
