@@ -4,7 +4,8 @@ import pickle
 from scipy.linalg import block_diag # for star sensor
 from scipy.integrate import odeint
 from mpl_toolkits.mplot3d import Axes3D
-
+import julian
+import datetime
 from subroutines import *
 from HSTdynamics import HSTdynamics
 from igrffx import igrffx
@@ -45,7 +46,7 @@ rho = 0
 tol = 1e-6
 #------------------
 #opts  = odeset('reltol', tol, 'abstol', tol)
-tspan = np.arange(0, 3*T, 10)
+tspan = np.arange(0, .5*T, 10)
 #opts------------------
 x = odeint(HSTdynamics, x0, tspan, args=(mu,J,rho))
 
@@ -67,22 +68,31 @@ ax.axis('equal')
 Ploting magnetic field
 '''
 
-t0 = np.array([2019,1,31,12,37,20,20])
+#t0 = np.array([2019,1,28,12,37,20,20])
 B=np.zeros((x.shape[0],3))
 
-for j in range(x.shape[0]):
-    time= np.copy(t0)
+for j in range(tspan.shape[0]):
+
+	mjd = 54372.78
+	dt = julian.from_jd(mjd, fmt='mjd')
+	newtime = dt + datetime.timedelta(seconds=tspan[j])
+
+
+    
+
     # converting time to required format
-    time[2]=t0[2]+tspan[j]/(3600*12)
-    t_rem=tspan[j]%(3600*12)
-    time[3]=t0[3]+t_rem/3600
-    t_rem=tspan[j]%3600
-    time[4]=t0[4]+tspan[j]/60
-    time[5]=tspan[j]%1
+    #time[2]=t0[2]+tspan[j]/(3600*12)
+    #t_rem=tspan[j]%(3600*12)
+    #time[3]=t0[3]+t_rem/3600
+    #t_rem=tspan[j]%3600
+    #time[4]=30#t0[4]+tspan[j]/60
+    #time[5]=tspan[j]%1
+    
+	#print(time[4])
 
-    B[j][:]=igrffx(1000*x[j][:],time[0],time[1],time[2],time[3],time[4],time[5],time[6]).T
-#    B[j][:]=np.array([1,2,3])
+	B[j][:]=igrffx(1000*x[j][0:3],newtime).T
 
+print(B)
 
 fig = plt.figure()
 ax = plt.axes( projection='3d')
@@ -142,4 +152,3 @@ plt.ylabel('\omega_3')
 plt.xlabel('t')
 
 plt.show()
-
