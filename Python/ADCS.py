@@ -140,3 +140,40 @@ plt.ylabel('\omega_3')
 plt.xlabel('t')
 
 plt.show()
+
+
+#plot b vectors
+
+#this is a temporary tspan vector
+tspanB = np.arange(0, T, 10)
+f,(ax1,ax2,ax3)=plt.subplots(3,1,sharey=True)
+ax1.plot(tspanB,B[:,0])
+plt.ylabel('X (nT)')
+plt.xlabel('t')
+ax1.set_title('Magnetic Field Vector')
+ax2.plot(tspanB,B[:,1])
+plt.ylabel('Y (nT)')
+plt.xlabel('t')
+ax3.plot(tspanB,B[:,2])
+plt.ylabel('Z (nT)')
+plt.xlabel('t')
+
+plt.show()
+
+
+#Plot B vectors superimposed on one another
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+plt.plot(tspanB, B[:,0], 'r--', tspanB, B[:,1], 'bs', tspanB, B[:,2], 'g^')
+
+plt.legend(('X (nT)', 'Y (nT)', 'Z (nT)'),
+           loc='upper right')
+plt.title('Magnetic Field vs Time')
+plt.xlabel('T (seconds)')
+plt.ylabel('Magnetic Field (nT)')
+
+
+plt.show()
+
