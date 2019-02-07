@@ -13,7 +13,7 @@ plt.close('all')
 
 ## Initialize and Save Constant Parameters
 # Orbital Elements and Parameters
-a = 6917.5              # Orbit Semi-Major Axis (km)
+a = 6917.50             # Orbit Semi-Major Axis (km)
 e = 0.000287            # Eccentricity
 i = 28.47               # Inclination (deg)
 RAAN = 176.23           # Right Ascension of Ascending Node (deg)
