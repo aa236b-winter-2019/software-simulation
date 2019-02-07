@@ -4,3 +4,9 @@ Python/__pycache__/
 Python/\.DS_Store
 
 \.DS_Store
+
+Python/build/lib/pyIGRF/
+
+Python/pyIGRF\.egg-info/
+
+*.pyc
