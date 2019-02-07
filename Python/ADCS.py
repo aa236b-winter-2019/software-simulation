@@ -46,7 +46,7 @@ rho = 0
 tol = 1e-6
 #------------------
 #opts  = odeset('reltol', tol, 'abstol', tol)
-tspan = np.arange(0, .5*T, 10)
+tspan = np.arange(0, T, 10)
 #opts------------------
 x = odeint(HSTdynamics, x0, tspan, args=(mu,J,rho))
 
@@ -76,23 +76,11 @@ for j in range(tspan.shape[0]):
 	mjd = 54372.78
 	dt = julian.from_jd(mjd, fmt='mjd')
 	newtime = dt + datetime.timedelta(seconds=tspan[j])
+	B[j][:]=(igrffx(x[j][0:3],newtime).T)
 
 
     
-
-    # converting time to required format
-    #time[2]=t0[2]+tspan[j]/(3600*12)
-    #t_rem=tspan[j]%(3600*12)
-    #time[3]=t0[3]+t_rem/3600
-    #t_rem=tspan[j]%3600
-    #time[4]=30#t0[4]+tspan[j]/60
-    #time[5]=tspan[j]%1
-    
-	#print(time[4])
-
-	B[j][:]=igrffx(x[j][0:3],newtime).T
-
-print(B)
+#print(B)
 
 fig = plt.figure()
 ax = plt.axes( projection='3d')

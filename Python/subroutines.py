@@ -98,7 +98,7 @@ def OE2ECI(a, e, i, RAAN, w, anom, mu):
 	elif i == 0 and e == 0:     # equatorial + circular
 		rotPeri2ECI = 1
 	else:                          # elliptical + inclined
-		rotPeri2ECI = rotz(RAAN)*rotx(i)*rotz(w)
+		rotPeri2ECI = np.dot(np.dot(rotz(np.deg2rad(RAAN)),rotx(np.deg2rad(i))),rotz(np.deg2rad(w)))
 
 	# rotate vectors into ECI frame
 	r_eci = np.array(rotPeri2ECI.dot(rPeri))
@@ -106,15 +106,15 @@ def OE2ECI(a, e, i, RAAN, w, anom, mu):
 	return r_eci, v_eci
 
 def rotz(w):
-	return np.array([[np.cos(w),-np.sin(w),0],
-					  [np.sin(w),np.cos(w),0],
+	return np.array([[np.cos(-w),np.sin(-w),0],
+					  [-np.sin(-w),np.cos(-w),0],
 					  [0,0,1]
 					])
 
 def rotx(i):
 	return np.array([[1,0,0],
-					 [0,np.cos(i),-np.sin(i)],
-					 [0,np.sin(i),np.cos(i)]
+					 [0,np.cos(-i),np.sin(-i)],
+					 [0,-np.sin(-i),np.cos(-i)]
 					])
 def q2rot(q):
 	# Converts quaternion to corresponding rotation matrix
