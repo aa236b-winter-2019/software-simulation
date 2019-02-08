@@ -23,9 +23,9 @@ mu = 3.986e5            # Earth Standard Gravitational Parameter (km^3/s^2)
 T = 2*np.pi*np.sqrt((a**3)/mu) # Orbital Period (s)
 
 # Mass Properties, Principle Axes of Inertia
-J11 = 28525.53
-J22 = 174815.86
-J33 = 181630.81
+J11 = .01/6
+J22 = .01/6
+J33 = .01/6
 J=np.array([J11,J22,J33])
 J = np.diag(J) # [x-axis z-axis y-axis]
 
@@ -40,7 +40,6 @@ tspan = np.linspace(0,5,500)
 # Convert to Earth-Centered Inertial Frame Coordinates
 r_eci, v_eci = OE2ECI(a, e, i, RAAN, w, anom, mu)
 x0 = np.append(r_eci, v_eci)
-rho = 0
 
 # ODE45 Solver for Orbital Dynamics
 tol = 1e-6
@@ -48,7 +47,7 @@ tol = 1e-6
 #opts  = odeset('reltol', tol, 'abstol', tol)
 tspan = np.arange(0, T, 10)
 #opts------------------
-x = odeint(HSTdynamics, x0, tspan, args=(mu,J,rho))
+x = odeint(HSTdynamics, x0, tspan, args=(mu,J))
 
 # Plot Orbit
 plt.figure()
@@ -90,12 +89,10 @@ ax.axis('equal')
 plt.show()
 ## Model HST Attitude Dynamics
 
-# From Superspin
-rho = 1.0e+05*np.array([0,0,3.6326])
 
 # Initial Attitude Conditions
 q0 = np.array([0,0,0,1]).T # Identity Quaternion
-om0 = np.array([0.25,0.25,2.5]).T # rad/s
+om0 = np.array([0.25,0.25,0.25]).T # rad/s
 x0 = np.append(om0,q0)
 
 # ODE45 Solver for Attitude Dynamics
@@ -104,7 +101,7 @@ tspan = np.arange(0, 15, dt)
 tol = 1e-6
 
 # opts  = odeset('reltol', tol, 'abstol', tol);
-x = odeint(HSTdynamics, x0, tspan, args=(mu,J,rho))
+x = odeint(HSTdynamics, x0, tspan, args=(mu,J))
 
 # Plot Quaternion
 q_true = x[:,3:7]
