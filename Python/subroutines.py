@@ -92,9 +92,9 @@ def OE2ECI(a, e, i, RAAN, w, anom, mu):
 
 	# develop rotation matrix depending on orbit shape/inclination
 	if i == 0 and e != 0:          # equatorial + elliptical
-		rotPeri2ECI = rotz(w)
+		rotPeri2ECI = rotz(np.deg2rad(w))
 	elif e == 0 and i != 0:    # circular + inclined
-		rotPeri2ECI = rotz(RAAN)*rotx(i)
+		rotPeri2ECI = np.dot(rotz(np.deg2rad(RAAN)),rotx(np.deg2rad(i)))
 	elif i == 0 and e == 0:     # equatorial + circular
 		rotPeri2ECI = 1
 	else:                          # elliptical + inclined
