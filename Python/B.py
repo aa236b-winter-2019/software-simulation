@@ -33,23 +33,27 @@ J = np.diag(J) # [x-axis z-axis y-axis]
 
 # Convert to Earth-Centered Inertial Frame Coordinates
 r_eci, v_eci = OE2ECI(a, e, i, RAAN, w, anom, mu)
-torque = np.zeros((1,3)).T
-q = np.zeros((1,4)).T # Identity Quaternion
-q[3]=1
+
+
+#variable initializations
+n=100                      # number of epochs per orbital period
+epochs=50                  # total number of epochs
+torque = np.zeros((1,3)).T #torque applied during each epoch
+q = np.zeros((1,4)).T      
+q[3]=1                     # Identity Quaternion
 om = 0.25*np.ones((1,3)).T # rad/s
-tspan=[0]
-B=np.zeros((1,3))
-r_total = np.zeros((1,3))
-v_total = np.zeros((1,3))
-om_total = np.zeros((1,3))
-q_total = np.zeros((1,4))
-Torque=np.zeros((1,3))
+tspan=[0] 				   # starting time
+B=np.zeros((1,3))		   # Magnetic field (unit?)
+r_total = np.zeros((1,3))  
+v_total = np.zeros((1,3))  
+om_total = np.zeros((1,3))  
+q_total = np.zeros((1,4))  
+Torque=np.zeros((1,3))     
 Tspan=[]
-m_max=5*np.ones((1,3))
-i=1
-for i in range (1,3):
-	print (i)
-	tspan = np.arange(tspan[0], 0.05*T*i, 10)
+m_max=0.5*np.ones((1,3))*10**-10
+
+for i in range (1,epochs):
+	tspan = np.arange(tspan[-1], T/n*i, 1)
 	if i==1:
 		rv_eci0 = np.append(r_eci, v_eci)
 		omq0 = np.append(om,q)
@@ -58,7 +62,7 @@ for i in range (1,3):
 		omq0 = np.append(om_total[-1,:],q_total[-1,:])
 
 	rv_eci = odeint(HSTdynamics2, rv_eci0, tspan, args=(mu,J,0))	
-	omq = odeint(HSTdynamics2, omq0, tspan, args=(mu,J,torque.reshape(1,3)))
+	omq = odeint(HSTdynamics2, omq0, tspan, args=(mu,J,torque))
 	r_total = np.concatenate((r_total,rv_eci[:,0:3]),axis=0)
 	v_total = np.concatenate((v_total,rv_eci[:,3:6]),axis=0)
 	om_total = np.concatenate((om_total,omq[:,0:3]),axis=0)
@@ -78,12 +82,9 @@ for i in range (1,3):
 	B_body = np.dot(q2rot(q_current),B_eci)
 	B_dot = -np.cross(om_current,B_body)
 	m_value = -np.multiply(m_max,np.sign(B_dot))
-	torque = np.cross(m_value,B_body)
-	torque=np.matmul(np.linalg.inv(J),torque.reshape(3,1))
-#	Torque=np.concatenate((Torque,torque.reshape(1,3)),axis=0)
-
-	#torque = np.zeros((1,3)).T
-
+	torque = np.cross(m_value,B_body)*(np.tanh(w))
+	torque = torque*(abs(w)>0.01) 
+	Torque=np.concatenate((Torque,torque.reshape(1,3)),axis=0)
 
 
 # Plot Orbit 
@@ -96,9 +97,8 @@ plt.ylabel('[km]')
 ax.set_title('Detumbling Orbit Dynamics')
 plt.show()
 
-
-# plt.figure()
 f,(ax1,ax2,ax3,ax4)=plt.subplots(4,1,sharey=True)
+plt.rcParams['axes.grid'] = True
 ax1.plot(Tspan,q_total[1:,0])
 plt.ylabel('q_1')
 plt.xlabel('t')
@@ -114,22 +114,34 @@ plt.ylabel('q_4')
 plt.xlabel('t')
 plt.show()
 
+
 # Plot Omega
 
 f,(ax1,ax2,ax3)=plt.subplots(3,1,sharey=True)
-ax1.plot(om_total[1:,0])
+plt.rcParams['axes.grid'] = True
+ax1.plot(Tspan,om_total[1:,0])
 plt.ylabel('\omega_1')
 plt.xlabel('t')
 ax1.set_title('Angular Velocity with Bdot controller')
-ax2.plot(om_total[1:,1])
+ax2.plot(Tspan,om_total[1:,1])
 plt.ylabel('\omega_2')
 plt.xlabel('t')
-ax3.plot(om_total[1:,2])
+ax3.plot(Tspan,om_total[1:,2])
 plt.ylabel('\omega_3')
 plt.xlabel('t')
 plt.show()
-'''
-plt.figure()
-plt.plot(Torque[:,0], 'r--', Torque, Torque[:,1], 'bs')
+
+tspan = np.arange(0, T/n*epochs, T/n)
+f,(ax1,ax2,ax3)=plt.subplots(3,1,sharey=True)
+plt.rcParams['axes.grid'] = True
+ax1.plot(tspan,Torque[:,0])
+plt.ylabel('Tx()')
+plt.xlabel('t')
+ax1.set_title('Torque')
+ax2.plot(tspan,Torque[:,1])
+plt.ylabel('Ty()')
+plt.xlabel('t')
+ax3.plot(tspan,Torque[:,2])
+plt.ylabel('Tz()')
+plt.xlabel('t')
 plt.show()
-'''
