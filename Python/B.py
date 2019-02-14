@@ -35,9 +35,9 @@ r_eci, v_eci = OE2ECI(a, e, i, RAAN, w, anom, mu)
 
 # Initialize Known Variables and Initial Conditions
 rv_eci0 = np.append(r_eci, v_eci)   # Initial Orbit State Vector
-omq0 = np.append(om,q)              # Initial Attitude State Vector
 om = 0.25*np.ones((1,3)).T          # Initial Angular Velocity (rad/s)
 q = np.array([0,0,1,0]).T           # Initial Quaternion, Identity
+omq0 = np.append(om,q)              # Initial Attitude State Vector
 torque = np.zeros((1,3)).T          # Initial Torque
 m_max = 0.5*np.ones((1,3))*10**-10  # Maximum Magnetic Moment in each Axis
 n = 100                             # Epochs per Orbital Period
