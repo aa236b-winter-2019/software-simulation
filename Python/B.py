@@ -30,6 +30,7 @@ J22 = .01/6
 J33 = .01/6
 J=np.array([J11,J22,J33])
 J = np.diag(J) # [x-axis z-axis y-axis]
+J_inv = np.linalg.inv(J)
 
 # Convert to Earth-Centered Inertial Frame Coordinates
 r_eci, v_eci = OE2ECI(a, e, i, RAAN, w, anom, mu)
@@ -56,8 +57,8 @@ for i in range (1,epochs):
 
 	# Propogating  r,v ,om and q with the torque calculated for 1 epoch	
 	tspan = np.arange(tspan[-1], T/n*i, 1)
-	rv_eci = odeint(HSTdynamics2, rv_eci0, tspan, args=(mu,J,0))	
-	omq = odeint(HSTdynamics2, omq0, tspan, args=(mu,J,torque))
+	rv_eci = odeint(HSTdynamics2, rv_eci0, tspan, args=(mu,J,J_inv,0))	
+	omq = odeint(HSTdynamics2, omq0, tspan, args=(mu,J,J_inv,torque))
 
 	# saving the calculated values for plotting
 	r_total = np.concatenate((r_total,rv_eci[:,0:3]),axis=0)

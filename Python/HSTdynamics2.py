@@ -1,4 +1,4 @@
-def HSTdynamics2(init_state, t, mu, J, torque):
+def HSTdynamics2(init_state, t, mu, J, J_inv, torque):
 # HSTdynamics: Contains full ODE dynamics for all spacecraft states.
 #
 # Inputs:
@@ -29,7 +29,7 @@ def HSTdynamics2(init_state, t, mu, J, torque):
         om0 = init_state[:3]
         q0 = init_state[3:7]
         torque=torque.reshape((3,))
-        om_dot = np.dot(np.linalg.inv(J), -np.cross(om0,np.dot(J,om0))+torque.T).T
+        om_dot = np.dot(J_inv, -np.cross(om0,np.dot(J,om0))+torque.T).T
  
        # matrix linear equation
         q_dot = qkin(q0, om0)
