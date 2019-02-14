@@ -28,6 +28,7 @@ J22 = .01/6
 J33 = .01/6
 J=np.array([J11,J22,J33])
 J = np.diag(J) # [x-axis z-axis y-axis]
+J_inv = np.linalg.inv(J) # Invert J Matrix for ease of computation
 
 # Compute Perturbed Attitude Dynamics
 tol = 1e-6
@@ -47,7 +48,7 @@ tol = 1e-6
 #opts  = odeset('reltol', tol, 'abstol', tol)
 tspan = np.arange(0, T, 10)
 #opts------------------
-x = odeint(HSTdynamics, x0, tspan, args=(mu,J))
+x = odeint(HSTdynamics, x0, tspan, args=(mu,J,J_inv))
 
 # Plot Orbit
 plt.figure()
@@ -101,7 +102,7 @@ tspan = np.arange(0, 15, dt)
 tol = 1e-6
 
 # opts  = odeset('reltol', tol, 'abstol', tol);
-x = odeint(HSTdynamics, x0, tspan, args=(mu,J))
+x = odeint(HSTdynamics, x0, tspan, args=(mu,J,J_inv))
 
 # Plot Quaternion
 q_true = x[:,3:7]

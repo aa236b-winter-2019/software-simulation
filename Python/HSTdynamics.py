@@ -1,4 +1,4 @@
-def HSTdynamics(init_state, t, mu, J):
+def HSTdynamics(init_state, t, mu, J, J_inv):
 # HSTdynamics: Contains full ODE dynamics for all spacecraft states.
 #
 # Inputs:
@@ -20,7 +20,7 @@ def HSTdynamics(init_state, t, mu, J):
         om0 = init_state
 
         # matrix linear equation
-        om_dot = -np.dot(np.linalg.inv(J), np.cross(om0, J.dot(om0)))
+        om_dot = -np.dot(J_inv, np.cross(om0, J.dot(om0)))
         x_dot = om_dot
     elif init_state.size == 6: # linear position and velocity
         # unpack initial state
@@ -38,7 +38,7 @@ def HSTdynamics(init_state, t, mu, J):
         q0 = init_state[3:7]
 
         # matrix linear equation
-        om_dot = -np.dot(np.linalg.inv(J), np.cross(om0, J.dot(om0)))
+        om_dot = -np.dot(J_inv, np.cross(om0, J.dot(om0)))
         q_dot = qkin(q0, om0)
         x_dot = np.append(om_dot, q_dot)
     elif init_state.size == 13: # all states
@@ -53,7 +53,7 @@ def HSTdynamics(init_state, t, mu, J):
         Tau_D = np.zeros((3,1))
 
         # matrix linear equation
-        om_dot = np.dot(np.linalg.inv(J), Tau_g + Tau_D - np.cross(om0, J.dot(om0)))
+        om_dot = np.dot(J_inv, Tau_g + Tau_D - np.cross(om0, J.dot(om0)))
         q_dot = (1/2)*np.dot(qhat, np.append(om0, 0))
 
         rv_dot = np.dot(np.block([[np.zeros((3,3)),      np.eye(3)],
