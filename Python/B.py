@@ -39,10 +39,21 @@ om = 0.25*np.ones((1,3)).T          # Initial Angular Velocity (rad/s)
 q = np.array([0,0,1,0]).T           # Initial Quaternion, Identity
 omq0 = np.append(om,q)              # Initial Attitude State Vector
 torque = np.zeros((1,3)).T          # Initial Torque
-m_max = 0.5*np.ones((1,3))*10**-10  # Maximum Magnetic Moment in each Axis
+#m_max = 0.5*np.ones((1,3))*10**-10  # Maximum Magnetic Moment in each Axis
 n = 100                             # Epochs per Orbital Period
 epochs = 100                        # Total Number of Epochs
 tspan = [0]                         # Start Time (sec)
+m_value= np.zeros((1,3))            # Initial magnetic moment
+
+# Initilaize the magnetorquer properties
+area_coil = np.array([0.8784,0.8784,0.8784])   # Magnetic area of coils (m sq)
+voltage_max = 8.4                              # max voltage to coils (volts)
+resistance  = np.array([178.4,178.4,135])      # resistance of coils (ohm)
+I_max = np.divide(voltage_max,resistance)      # Maximum current (A)
+m_max = I_max*area_coil                        # Maximum magnetic moment (A.msq)
+m_max=np.reshape(m_max,(1,3))
+power_max = voltage_max*I_max                  # Max power consumed (W)
+energy_consumed = 0                            # Initializing total energy consumption (J)
 
 # Initialize Zero Arrays for Time History  
 r_hist = np.zeros((1,3))            # Time History of Position
@@ -51,6 +62,7 @@ om_hist = np.zeros((1,3))           # Time History of Angular Velocity
 q_hist = np.zeros((1,4))            # Time History of Quaternion
 torque_hist = np.zeros((1,3))       # Time History of Torque
 Tspan = []                          # Time History 
+P_hist=0                            # Time history of power consumption
 
 for i in range (1,epochs):
     # Propogate State Vector [r, v, om, q] with Applied Torque for 1 Epoch	
@@ -69,12 +81,17 @@ for i in range (1,epochs):
     rv_eci0 = np.append(r_hist[-1,:], v_hist[-1,:])
     omq0 = np.append(om_hist[-1,:],q_hist[-1,:])
     
+    # Compute energy that will be consumed by applying this torque in this epoch
+    power=np.sum(np.dot(np.square(m_value/m_max),power_max))
+    energy_consumed += power*(T/n)
+    P_hist = np.append(P_hist,power)
+
     # Calculate Earth's Magnetic Field in ECI
-    j = tspan.shape[0]-1   # Final Index of tspan
-    mjd = 54372.78         # Mean Julian Date of Initial Epoch
-    dt = julian.from_jd(mjd, fmt='mjd') # Convert mjd into seconds
+    j = tspan.shape[0]-1                                # Final Index of tspan
+    mjd = 54372.78                                      # Mean Julian Date of Initial Epoch
+    dt = julian.from_jd(mjd, fmt='mjd')                 # Convert mjd into seconds
     newtime = dt + datetime.timedelta(seconds=tspan[j]) # Add time from Epoch
-    B_eci = igrffx(rv_eci[j][0:3],newtime) # Look up ECI Magnetic Field
+    B_eci = igrffx(rv_eci[j][0:3],newtime)*10**-9       # Look up ECI Magnetic Field (T)
     
     # Rotate B_eci into Satellite Body Frame B_body
     q_current = q_hist[-1,:]  
@@ -82,12 +99,16 @@ for i in range (1,epochs):
     B_body = np.dot(q2rot(q_current),B_eci)
     
     # Compute Torque using B-dot Control Law for Next Epoch
-    B_dot = -np.cross(om_current,B_body) # Compute B_dot
-    m_value = -np.multiply(m_max,np.sign(B_dot)) # Direction of Magnetic Mom.
-    torque = np.cross(m_value,B_body)*np.tanh(w) # Compute Torque
-    torque = torque*(abs(w)>1*np.pi/180) # Turn off Torque within Omega Limits
+    B_dot = -np.cross(om_current,B_body)               # Compute B_dot
+    m_value = -np.multiply(m_max,np.sign(B_dot))*abs(np.tanh(om_current))       # Direction of Magnetic Mom.
+    
+    torque = np.cross(m_value,B_body)      # Compute Torque
+    torque = torque*(abs(om_current)>1*np.pi/180)               # Turn off Torque within Omega Limits
     torque_hist = np.concatenate((torque_hist,torque),axis=0) # Store History
 
+
+
+print("Total Energy consumed for detumbling: "+str(energy_consumed)+ " J")
 # Plot Orbit 
 plt.figure()
 ax=plt.axes(projection='3d')
@@ -101,48 +122,56 @@ plt.show()
 # Plot Quaternion
 f,(ax1,ax2,ax3,ax4)=plt.subplots(4,1,sharey=True)
 plt.rcParams['axes.grid'] = True
-ax1.plot(Tspan,q_hist[1:,0])
+ax1.plot(Tspan/60,q_hist[1:,0])
 plt.ylabel('q_1')
-plt.xlabel('t(sec)')
+plt.xlabel('t(min)')
 ax1.set_title('Quaternion Dynamics')
-ax2.plot(Tspan,q_hist[1:,1])
+ax2.plot(Tspan/60,q_hist[1:,1])
 plt.ylabel('q_2')
 plt.xlabel('t(sec)')
-ax3.plot(Tspan,q_hist[1:,2])
+ax3.plot(Tspan/60,q_hist[1:,2])
 plt.ylabel('q_3')
-plt.xlabel('t(sec)')
-ax4.plot(Tspan,q_hist[1:,3])
+plt.xlabel('t(min)')
+ax4.plot(Tspan/60,q_hist[1:,3])
 plt.ylabel('q_4')
-plt.xlabel('t(sec)')
+plt.xlabel('t(min)')
 plt.show()
 
 # Plot Omega
 f,(ax1,ax2,ax3)=plt.subplots(3,1,sharey=True)
 plt.rcParams['axes.grid'] = True
-ax1.plot(Tspan,om_hist[1:,0])
+ax1.plot(Tspan/60,om_hist[1:,0])
 plt.ylabel('\omega_1')
-plt.xlabel('t(sec)')
+plt.xlabel('t(min)')
 ax1.set_title('Angular Velocity with Bdot controller')
-ax2.plot(Tspan,om_hist[1:,1])
+ax2.plot(Tspan/60,om_hist[1:,1])
 plt.ylabel('\omega_2')
-plt.xlabel('t(sec)')
-ax3.plot(Tspan,om_hist[1:,2])
+plt.xlabel('t(min)')
+ax3.plot(Tspan/60,om_hist[1:,2])
 plt.ylabel('\omega_3')
-plt.xlabel('t(sec)')
+plt.xlabel('t(min)')
 plt.show()
 
 # Plot Torque
 Tspan_torque = np.arange(0, T/n*epochs, T/n)
 f,(ax1,ax2,ax3)=plt.subplots(3,1,sharey=True)
 plt.rcParams['axes.grid'] = True
-ax1.plot(Tspan_torque,torque_hist[:,0])
+ax1.plot(Tspan_torque/60,torque_hist[:,0])
 plt.ylabel('Tx()')
-plt.xlabel('t')
+plt.xlabel('t(min)')
 ax1.set_title('Torque')
-ax2.plot(Tspan_torque,torque_hist[:,1])
+ax2.plot(Tspan_torque/60,torque_hist[:,1])
 plt.ylabel('Ty()')
-plt.xlabel('t')
-ax3.plot(Tspan_torque,torque_hist[:,2])
+plt.xlabel('t(min)')
+ax3.plot(Tspan_torque/60,torque_hist[:,2])
 plt.ylabel('Tz()')
-plt.xlabel('t')
+plt.xlabel('t(min)')
+plt.show()
+
+# Power consumption 
+plt.figure()
+plt.plot(Tspan_torque[2:]/60,P_hist[2:],'r')
+plt.xlabel('Time (min)')
+plt.ylabel('Power consumed (W)')
+plt.title('Power consumption ')
 plt.show()
