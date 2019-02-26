@@ -9,6 +9,7 @@ import datetime
 from subroutines import *
 from HSTdynamics import HSTdynamics
 from HSTdynamics2 import HSTdynamics2
+from propagate import propagate
 from igrffx import igrffx
 import pdb
 plt.close('all')
@@ -73,8 +74,8 @@ P_hist = []                       # Time history of power consumption
 for i in range (1,epochs):
     # Propogate State Vector [r, v, om, q] with Applied Torque for 1 Epoch	
     tspan = np.arange(tspan[-1], T/n*i, 1)
-    rv_eci = odeint(HSTdynamics2, rv_eci0, tspan, args=(mu,J,J_inv,0,0,0,0))	
-    omqtp = odeint(HSTdynamics2, omqtp0, tspan, args=(mu,J,J_inv,B_eci,m_value,m_max,power_max))
+    rv_eci = odeint(HSTdynamics2, rv_eci0, tspan, args=(mu,J,J_inv,0,0,0))	
+    omqtp = odeint(HSTdynamics2, omqtp0, tspan, args=(mu,J,J_inv,B_eci,m_max,power_max))
     
     # Store Time History for Plotting
     r_hist = np.concatenate((r_hist,rv_eci[:,0:3]),axis=0)
