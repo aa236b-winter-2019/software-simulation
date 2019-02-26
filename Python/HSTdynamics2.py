@@ -1,4 +1,4 @@
-def HSTdynamics2(init_state, t, mu, J, J_inv, B_eci, m_value, m_max, power_max):
+def HSTdynamics2(init_state, t, mu, J, J_inv, B_eci, m_max, power_max):
 # HSTdynamics: Contains full ODE dynamics for all spacecraft states.
 #
 # Inputs:
