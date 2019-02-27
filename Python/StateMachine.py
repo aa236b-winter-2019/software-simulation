@@ -62,6 +62,9 @@ class DeployAntenna(State):
         return('Deploy antenna state')
     
 class TumbleCheck(State):
+    #FIX THE LOGIC HERE!!!!
+    
+    tumble_threshold_value = .1 #rad/s?????
     def run(self, hardware):
         TIME = 1 # seconds
         print('Checking the tumbling rate')
@@ -70,7 +73,7 @@ class TumbleCheck(State):
     def next(self, hardware):
         #tumbling
         if self.tumble_compare(hardware):
-            return PandaSat.battery_tumble_check()
+            return PandaSat.battery_tumble_check
         return PandaSat.sleep
     
     def __str__(self):
@@ -79,8 +82,7 @@ class TumbleCheck(State):
     def tumble_compare(self, hardware):
         # Implements the logic of the tumble check
         # Return True for tumbling too fast or False for not tumbling above the threshold
-        threshold_value = 1 #1 rad/s?
-        if any(item > threshold_value for item in hardware.getAngularVelocity()):
+        if any(item > TumbleCheck.tumble_threshold_value for item in hardware.readIMU()[3:6]):
             return True
         return False
         
@@ -97,14 +99,15 @@ class Sleep(State):
         return('Sleep state')
     
 class BatteryTumbleCheck(State):
+    #CHANGE TO CHECK BATTERY VOLTAGE ON ACTUAL FLIGHT SOFTWARE
     def run(self, hardware):
         TIME = 1 # seconds
         print('Checking battery voltage before 1 min of detumbling')
         return TIME
         
     def next(self, hardware):
-        battery_voltage = hardware.getBatteryVoltage()
-        battery_tumble_threshold = hardware.battery_tumble_threshold
+        battery_voltage = hardware.checkBatteryPercent()
+        battery_tumble_threshold = 30 #Percentage
         if battery_voltage < battery_tumble_threshold:
             return PandaSat.sleep
         return PandaSat.detumble
@@ -113,27 +116,37 @@ class BatteryTumbleCheck(State):
         return('Battery tumble check state')
     
 class Detumble(State):
+    detumble_second_count = 0
     def run(self, hardware):
-        TIME = 60 # seconds
-        print('Detumbling the spacecraft for 1 min')
+        Detumble.detumble_second_count += 1
+        TIME = 1 # seconds
+        self.calcMValue(hardware)
+        print('Detumbling the spacecraft for 1 s')
         return TIME
         
     def next(self, hardware):
-        return PandaSat.battery_beacon_check
+        if Detumble.detumble_second_count >= 60:
+            Detumble.detumble_second_count = 0
+            return PandaSat.battery_beacon_check
+        return PandaSat.detumble
+
+    def calcMValue(self, hardware):
+        imu_reading = hardware.readIMU()
+
     
     def __str__(self):
         return('Detumble state')
     
 class BatteryBeaconCheck(State):
+    battery_beacon_threshold = 30 #Percent
     def run(self, hardware):
         TIME = 1 # seconds
         print('Checking battery voltage before sending beacon')
         return TIME
         
     def next(self, hardware):
-        battery_voltage = hardware.getBatteryVoltage()
-        battery_beacon_threshold = hardware.battery_beacon_threshold
-        if battery_voltage < battery_beacon_threshold:
+        battery_voltage = hardware.checkBatteryPercent()
+        if battery_voltage < BatteryBeaconCheck.battery_beacon_threshold:
             return PandaSat.sleep
         return PandaSat.beacon
     
@@ -171,7 +184,7 @@ class UplinkCheck(State):
         return TIME
         
     def next(self, hardware):
-        if hardware.environment.uplinkRequested:
+        if hardware.uplink_requested:
             return PandaSat.process_uplink
         return PandaSat.payload_schedule_check
         
@@ -198,7 +211,7 @@ class DownlinkCheck(State):
         return TIME
         
     def next(self, hardware):
-        if hardware.environment.downlinkRequested:
+        if hardware.downlinkRequested:
             return PandaSat.downlink
         return PandaSat.payload_schedule_check
     def __str__(self):
@@ -224,23 +237,23 @@ class PayloadScheduleCheck(State):
         
     def next(self, hardware):
         current_time = hardware.time
-        margin= 60 #seconds but should convert to julian date
+        margin = 60 #seconds but should convert to julian date
         
         if current_time > hardware.payload_time[0] - margin:
             return PandaSat.battery_payload_check
-        return PandaSat.sleep
+        return PandaSat.tumble_check
     
 class BatteryPayloadCheck(State):
+    battery_payload_threshold = 30 # Percent
     def run(self, hardware):
         TIME = 1 # seconds
         print('Checking battery voltage before turning payload on')
         return TIME
         
     def next(self, hardware):
-        battery_voltage = hardware.getBatteryVoltage()
-        battery_payload_threshold = hardware.battery_payload_threshold
-        if battery_voltage < battery_beacon_threshold:
-            return PandaSat.sleep
+        battery_voltage = hardware.checkBatteryPercent()
+        if battery_voltage < BatteryPayloadCheck.battery_beacon_threshold:
+            return PandaSat.tumble_check
         return PandaSat.payload_on
     
     def __str__(self):
@@ -253,7 +266,8 @@ class PayloadOn(State):
         return TIME
         
     def next(self, hardware):
-        return PandaSat.sleep
+
+        return PandaSat.tumble_check
         
 
 class PandaSat(StateMachine):

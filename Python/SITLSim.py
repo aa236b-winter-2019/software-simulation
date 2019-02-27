@@ -1,3 +1,4 @@
+import numpy as np
 from StateMachine import *
 
 
@@ -52,6 +53,146 @@ class PhysicalSat:
         # How are we going to estimate how the vechile perceives it's actual state?
         return self.angular_velocity
 
+class Hardware:
+    def readIMU(self):
+        assert 0, "readImu not implemented"
+
+    def runMagnetorquer(self, m_value):
+        assert 0, 'runMagnetorquer not implemented'
+
+    def checkBatteryPercent(self):
+        assert 0, 'checkBatteryPercent not implemented'
+
+
+
+class SoftwareSimHardware(Hardware):
+    """Class to represent the hardware in the Software in the Loop Simulation
+
+    Assumptions:
+    None
+
+    Source:
+    N/A
+
+    Inputs:
+    None
+
+    Output:
+    None
+
+    Properties Used:
+    None
+    """
+    def __init__(self):
+        """Class to represent the hardware in the Software in the Loop Simulation
+
+        Assumptions:
+        Battery starts at full capacity
+
+        Source:
+        N/A
+
+        Inputs:
+        None
+
+        Output:
+        None
+
+        Properties Used:
+        None
+        """
+        self.max_battery_capacity = 159840 #In J
+        self.uplink_requested = False
+        self.downlink_requested = False
+        self.time = 0 #should put this in julian date....?
+        self.payload_time = [1e7]
+
+        # Physical properties
+        # Define Principle Axes of Inertia
+        J11 = .01/6              # (kg m^2)
+        J22 = .01/6              # (kg m^2)
+        J33 = .01/6              # (kg m^2)
+        self.J = np.diag(np.array([J11,J22,J33])) # Diagonalize Principle Axes
+        self.J_inv = np.linalg.inv(self.J) # Invert J Matrix for Ease of Computation
+
+        # Initialize the Magnetorquer Properties
+        area_coil = np.array([0.8784,0.8784,0.8784])   # Magnetic area of coils (m sq)
+        voltage_max = 8.4                              # max voltage to coils (volts)
+        resistance  = np.array([178.4,178.4,135])      # resistance of coils (ohm)
+        I_max = np.divide(voltage_max,resistance)      # Maximum current (A)
+        m_max = I_max*area_coil                        # Maximum magnetic moment (A.msq)
+        self.m_max = np.reshape(m_max,(1,3))
+        self.power_max = voltage_max*I_max                  # Max power consumed (W)
+
+
+    def getHardwareProperties(self):
+        return (self.J, self.J_inv, self.m_max, self.power_max)
+
+    def readIMU(self):
+        """Returns the values the IMU would read.
+
+        Assumptions:
+        accelerations aren't used and can be set to zero
+
+        Source:
+        N/A
+
+        Inputs:
+        None
+
+        Output:
+        9 element tuple in order of accelerations, rotation velocities, magnetic field readings
+        in the body frame
+
+        Properties Used:
+        None
+        """   
+
+        # Obvious placeholder. 
+        return (0, 0, 0, 0, 0, 0, 0, 0, 0)
+
+    def checkBatteryPercent(self):
+        """Returns the values battery current percentage
+
+        Assumptions:
+        Percent is just current_value/max_value
+
+        Source:
+        N/A
+
+        Inputs:
+        None
+
+        Output:
+        Battery remaining percentage
+
+        Properties Used:
+        None
+        """
+
+        #placeholder value
+        return 50
+
+    def runMagnetorquer(self, m_value):
+        """Sets the magnetorquer moment value
+
+        Assumptions:
+        WHAT ARE THE UNITS OF m_value?!?!?
+
+        Source:
+        N/A
+
+        Inputs:
+        m_value
+
+        Output:
+        None
+
+        Properties Used:
+        None
+        """
+
+        #THIS SHOULD SET A VALUE IN THE SIMULATION PROPAGATE OR SOMETHING
 
 
 # Static variable initialization:
@@ -87,6 +228,8 @@ def initialize_orbit():
 def runSimulationTime(state_machine, max_time):
     # Assumptions
     # time starts at zero
+
+    J, J_inv, m_max, power_max = ps.hardware.getHardwareProperties()
     time = 0
     while time <= max_time:
         delta_t, _ = state_machine.runStep(None)
@@ -96,6 +239,8 @@ def runSimulationTime(state_machine, max_time):
 def runSimulationSteps(state_machine, num_steps):
     # Assumptions
     # time starts at zero
+
+    J, J_inv, m_max, power_max = ps.hardware.getHardwareProperties()
     time = 0
     for i in range(num_steps):
         delta_t, _ = state_machine.runStep(None)
@@ -106,11 +251,11 @@ def runSimulationSteps(state_machine, num_steps):
 #Simulation
 
 
-orbit_sim = SoftwareSimulation()
-hardware = PhysicalSat(orbit_sim)
-inputs = (None,None,None,None,None, None, None, None, None)
+#orbit_sim = SoftwareSimulation()
+hardware = SoftwareSimHardware()
+#inputs = (None,None,None,None,None, None, None, None, None)
 ps = PandaSat(hardware)
-runSimulationSteps(ps, 10)
+runSimulationSteps(ps, 11)
 #ps.runAll(inputs)
 print('\n')
 #orbit_sim.requestUplink()

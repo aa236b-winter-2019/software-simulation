@@ -1,57 +1,18 @@
-class Environment:
-    def propagate(self):
-        assert 0, "propagate not implemented"
-        
-class Simulation(Environment):
-    def __init__(self):
-        self.state = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] 
-        # The state vector [jx, jy, jz, then 4 quaternions, x, y, z, xdot, ydot, zdot]
-        self.uplinkRequested = False
-        self.downlinkRequested = False
-    def propagate(self, initial_state, control_effort, timestep):
-        # This should call orbit propagator
-        print('Propagating the time forward by %.1f seconds' %timestep)
-
-        return initial_state + 1*timestep
-        
-        
-    def requestUplink(self):
-        self.uplinkRequested = True
-        
-    def requestDownlink(self):
-        self.downlinkRequested = True
-
-class PhysicalSat:
-    def __init__(self, environment):
-        self.angular_velocity = [0,0,0]
-        self.battery_voltage = 10
-        self.battery_beacon_threshold = 3.6 #Volts
-        self.battery_tumble_threshold = 3.6 #Volts
-        self.environment = environment
-        self.time = 2458517.500000 #Julian date for February 3rd, 2018 at 00:00
-        self.battery_payload_threshold = 3.6 #Volts
-        self.payload_time = [1e7, 1e7]
-        
-        
-    def getBatteryVoltage(self):
-        return self.battery_voltage
-    
-    def getAngularVelocity(self):
-        # How are we going to estimate how the vechile perceives it's actual state?
-        return self.angular_velocity
-
 
 # Based off state machine found here: https://python-3-patterns-idioms-test.readthedocs.io/en/latest/StateMachine.html
+
+#TODO
+# Make states return execution time
+# Make run all return some form of what state the s/c is transitioning to
+# Add power consumption to each state
+# Add software in the loop hardware class
+
 
 class State:
     def run(self):
         assert 0, "run not implemented"
     def next(self, input):
         assert 0, "next not implemented"
-
-    @staticmethod
-    def propagate(hardware, initial_state, control_effort, timestep):
-        return hardware.environment.propagate(initial_state, control_effort, timestep)
 
 class StateMachine:
     def __init__(self, initialState, hardware):
@@ -72,12 +33,10 @@ class StateMachine:
 
 
 
-
-
 class Hold(State):
     def run(self, hardware):
         print("Hold: Initial Boot and hold")
-        super(Hold, Hold).propagate(hardware.current_state)
+        #super(Hold, Hold).propagate(hardware.current_state)
 
     def next(self, hardware):
         return PandaSat.deploy_antenna
@@ -266,35 +225,3 @@ class PandaSat(StateMachine):
     def __init__(self, hardware):
         # Initial state
         StateMachine.__init__(self, PandaSat.hold, hardware)
-
-# Static variable initialization:
-PandaSat.hold = Hold()
-PandaSat.deploy_antenna = DeployAntenna()
-PandaSat.tumble_check = TumbleCheck()
-PandaSat.sleep = Sleep()
-PandaSat.battery_tumble_check = BatteryTumbleCheck()
-PandaSat.detumble = Detumble()
-PandaSat.battery_beacon_check = BatteryBeaconCheck()
-PandaSat.beacon = Beacon()
-PandaSat.listen = Listen()
-PandaSat.uplink_check = UplinkCheck()
-PandaSat.process_uplink = ProcessUplink()
-PandaSat.downlink_check = DownlinkCheck()
-PandaSat.downlink = Downlink()
-PandaSat.payload_schedule_check = PayloadScheduleCheck()
-PandaSat.battery_payload_check = BatteryPayloadCheck()
-PandaSat.payload_on = PayloadOn()
-
-
-
-
-
-orbit_sim = Simulation()
-hardware = PhysicalSat(orbit_sim)
-inputs = (None,None,None,None,None, None, None, None, None)
-ps = PandaSat(hardware)
-ps.runAll(inputs)
-print('\n')
-orbit_sim.requestUplink()
-inputs2 = (None,None,None,None,None, None, None, None)
-ps.runAll(inputs2)
