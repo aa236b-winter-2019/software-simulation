@@ -46,7 +46,7 @@ def dynamics(init_state, t, mu, J, J_inv, B_eci, m_max, m_value, power_max):
         
         torque = np.cross(m_value,B_body)      # Compute Torque
         #print('mvalue: ' + str(m_value))
-        torque = torque*(abs(om0)>1*np.pi/180)               # Turn off Torque within Omega Limits
+        #torque = torque*(abs(om0)>1*np.pi/180)               # Turn off Torque within Omega Limits
         
         torque=torque.reshape((3,))
         

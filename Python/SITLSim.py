@@ -236,7 +236,7 @@ class SoftwareSimHardware(Hardware):
 
         # Initialize Known Variables and Initial Conditions
         rv_eci0 = np.append(r_eci, v_eci)   # Initial Orbit State Vector
-        om = 0.25*np.array([1,1,1])         # Initial Angular Velocity (rad/s)
+        om = 0.015*np.array([1,1,1])         # Initial Angular Velocity (rad/s)
         q = np.array([0,0,1,0])             # Initial Quaternion, Identity
         torque = np.array([0,0,0])          # Initial Torque
         power = np.array([0])               # Initial Power
@@ -292,18 +292,17 @@ def runSimulationSteps(state_machine, num_steps):
 
     time = 0
     for i in range(num_steps):
+        
+        delta_t, _ = state_machine.runStep(None)
+        state_machine.hardware.state = propagate(state_machine.hardware, delta_t)
+        state_machine.hardware.time += (delta_t/86400)
+        time += delta_t
         xyz_hist[i, :] = state_machine.hardware.state[0:3]
         w_hist[i,:] = state_machine.hardware.state[6:9]
         q_hist[i,:] = state_machine.hardware.state[9:13]
         torque_hist[i,:] = state_machine.hardware.state[13:16]
         power_hist[i,:] = state_machine.hardware.state[16:17]
         time_hist[i] = time
-        delta_t, _ = state_machine.runStep(None)
-        state_machine.hardware.state = propagate(state_machine.hardware, delta_t)
-        state_machine.hardware.time += (delta_t/86400)
-
-
-        time += delta_t
         #print('current time: %.1f min' %(time/60))
 
     return (time_hist, xyz_hist, w_hist, q_hist, torque_hist, power_hist)
@@ -316,7 +315,7 @@ def runSimulationSteps(state_machine, num_steps):
 hardware = SoftwareSimHardware()
 #inputs = (None,None,None,None,None, None, None, None, None)
 ps = PandaSat(hardware)
-time_hist, xyz_hist, w_hist, q_hist, torque_hist, power_hist = runSimulationSteps(ps, 10000)
+time_hist, xyz_hist, w_hist, q_hist, torque_hist, power_hist = runSimulationSteps(ps, 11)
 #print(w_hist)
 
 # Plot Orbit 

@@ -10,7 +10,7 @@ import math
 import numpy as np
 
 class State:
-    verbose_flag = False
+    verbose_flag = True
     def run(self):
         assert 0, "run not implemented"
     def next(self, input):
@@ -70,7 +70,7 @@ class DeployAntenna(State):
 class TumbleCheck(State):
     #FIX THE LOGIC HERE!!!!
     
-    tumble_threshold_value = .01745 #rad/s = 1 deg/s
+    tumble_threshold_value = .0001 #rad/s = 1 deg/s
     def run(self, hardware):
         TIME = 1 # seconds
         if State.verbose_flag:
@@ -130,7 +130,7 @@ class Detumble(State):
     detumble_second_count = 0
     def run(self, hardware):
         Detumble.detumble_second_count += 1
-        TIME = 1 # seconds
+        TIME = 1 # length of time 
         m_value = self.calcMValue(hardware)
         hardware.runMagnetorquer( m_value)
         if State.verbose_flag:
@@ -138,7 +138,7 @@ class Detumble(State):
         return TIME
         
     def next(self, hardware):
-        if Detumble.detumble_second_count >= 60:
+        if Detumble.detumble_second_count >= 10:
             Detumble.detumble_second_count = 0
             hardware.runMagnetorquer([0,0,0]) #Turns the magnetorquer off
             return PandaSat.battery_beacon_check
@@ -151,7 +151,7 @@ class Detumble(State):
         B_body = imu_reading[2]
 
         B_dot = -np.cross(om0,B_body)               # Compute B_dot
-        m_value = -np.multiply(hardware.m_max,np.sign(B_dot))*abs(np.tanh(om0))
+        m_value = -np.multiply(hardware.m_max,np.sign(B_dot))*np.abs(np.tanh(om0))
 
         return m_value
 
