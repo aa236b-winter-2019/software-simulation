@@ -42,9 +42,10 @@ def dynamics(init_state, t, mu, J, J_inv, B_eci, m_max, m_value, power_max):
     
         # Compute Torque using B-dot Control Law for Next Epoch
         B_dot = -np.cross(om0,B_body)               # Compute B_dot
-        m_value = -np.multiply(m_max,np.sign(B_dot))*abs(np.tanh(om0))       # Direction of Magnetic Mom.
+        #m_value = -np.multiply(m_max,np.sign(B_dot))*abs(np.tanh(om0))       # Direction of Magnetic Mom.
         
         torque = np.cross(m_value,B_body)      # Compute Torque
+        #print('mvalue: ' + str(m_value))
         torque = torque*(abs(om0)>1*np.pi/180)               # Turn off Torque within Omega Limits
         
         torque=torque.reshape((3,))

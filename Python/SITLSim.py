@@ -203,13 +203,13 @@ class SoftwareSimHardware(Hardware):
         """Sets the magnetorquer moment value
 
         Assumptions:
-        WHAT ARE THE UNITS OF m_value?!?!?
+        
 
         Source:
         N/A
 
         Inputs:
-        m_value
+        m_value A/m^2
 
         Output:
         None
@@ -310,8 +310,8 @@ def runSimulationSteps(state_machine, num_steps):
 hardware = SoftwareSimHardware()
 #inputs = (None,None,None,None,None, None, None, None, None)
 ps = PandaSat(hardware)
-xyz_hist, time_hist, w_hist = runSimulationSteps(ps, 5)
-
+xyz_hist, time_hist, w_hist = runSimulationSteps(ps, 110)
+#print(w_hist)
 
 # Plot Orbit 
 plt.figure()
