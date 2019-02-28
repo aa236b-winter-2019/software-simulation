@@ -1,5 +1,8 @@
-def propagate(init_state, deltaT, mjd):
+def propagate(hardware, deltaT):
 # propagate: Propagates a specified state vector by a specified time increment
+#
+# Assumptions:
+#       In Earth orbit
 #
 # Inputs:
 #       init_state - Variable initial state vector [r; v; omega; q]
@@ -12,26 +15,16 @@ def propagate(init_state, deltaT, mjd):
     import matplotlib.pyplot as plt
     from scipy.integrate import odeint
     from igrffx import igrffx
-    from HSTdynamics2 import HSTdynamics2
+    from dynamics import dynamics
     import julian
-    import pdb
+#    import pdb
+
+    J, J_inv, m_max, power_max = hardware.getHardwareProperties()
     
-    # Define Principle Axes of Inertia
-    J11 = .01/6              # (kg m^2)
-    J22 = .01/6              # (kg m^2)
-    J33 = .01/6              # (kg m^2)
-    J = np.diag(np.array([J11,J22,J33])) # Diagonalize Principle Axes
-    J_inv = np.linalg.inv(J) # Invert J Matrix for Ease of Computation
-    
-    # Initialize the Magnetorquer Properties
-    area_coil = np.array([0.8784,0.8784,0.8784])   # Magnetic area of coils (m sq)
-    voltage_max = 8.4                              # max voltage to coils (volts)
-    resistance  = np.array([178.4,178.4,135])      # resistance of coils (ohm)
-    I_max = np.divide(voltage_max,resistance)      # Maximum current (A)
-    m_max = I_max*area_coil                        # Maximum magnetic moment (A.msq)
-    m_max = np.reshape(m_max,(1,3))
-    power_max = voltage_max*I_max                  # Max power consumed (W)
-    
+    init_state = hardware.state
+    mjd = hardware.time
+    m_value = hardware.m_value
+
     # Initialize Known Variables and Initial Conditions
     rv_eci0 = init_state[0:6]                      # Initial Orbit State Vector
     omq0 = init_state[6:]                          # Initial Angular Velocity (rad/s) and Quaternion    
@@ -41,15 +34,18 @@ def propagate(init_state, deltaT, mjd):
     t0 = julian.from_jd(mjd, fmt='mjd')            # Convert mjd into seconds
     B_eci = igrffx(rv_eci0[0:3],t0)*10**-9
     
-    # Propogate State Vector [r, v, om, q] with Applied Torque for 1 Epoch	
+    # Propogate State Vector [r, v, om, q] with Applied Torque for 1 Epoch
+    # delta time of 1 s which is required by HSTdynamics2
     tspan = np.arange(0, deltaT, 1)
-    rv_eci = odeint(HSTdynamics2, rv_eci0, tspan, args=(mu,J,J_inv,0,0,0))	
-    omq = odeint(HSTdynamics2, omq0, tspan, args=(mu,J,J_inv,B_eci,m_max,power_max)) # This propagates with torque coils ON (add flag later?)
+    rv_eci = odeint(dynamics, rv_eci0, tspan, args=(mu,J,J_inv,0,0,0, 0))	
+    omq = odeint(dynamics, omq0, tspan, args=(mu,J,J_inv,B_eci,m_max, m_value, power_max)) # This propagates with torque coils ON (add flag later?)
     
     # Update New Initial Conditions and Store Propagated State
     r = rv_eci[-1,0:3]
     v = rv_eci[-1,3:6]
     om = omq[-1,0:3]
     q = omq[-1,3:7]
+    torque = omq[-1, 7:10]
+    power = omq[-1, 10:11]
         
-    return np.concatenate((r, v, om, q))
+    return np.concatenate((r, v, om, q, torque, power))

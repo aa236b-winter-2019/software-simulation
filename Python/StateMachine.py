@@ -4,7 +4,10 @@
 #TODO
 # Add power consumption to each state
 # Add software in the loop hardware class
+# REMOVE NUMPY FROM DETUMBLE CALCS
 
+import math
+import numpy as np
 
 class State:
     def run(self):
@@ -38,7 +41,7 @@ class StateMachine:
 
 class Hold(State):
     def run(self, hardware):
-        TIME = 45*60 # seconds
+        TIME = 60 # seconds
         print("Hold: Initial Boot and hold")
         #super(Hold, Hold).propagate(hardware.current_state)
         return TIME
@@ -64,7 +67,7 @@ class DeployAntenna(State):
 class TumbleCheck(State):
     #FIX THE LOGIC HERE!!!!
     
-    tumble_threshold_value = .1 #rad/s?????
+    tumble_threshold_value = .01745 #rad/s = 1 deg/s
     def run(self, hardware):
         TIME = 1 # seconds
         print('Checking the tumbling rate')
@@ -82,7 +85,9 @@ class TumbleCheck(State):
     def tumble_compare(self, hardware):
         # Implements the logic of the tumble check
         # Return True for tumbling too fast or False for not tumbling above the threshold
-        if any(item > TumbleCheck.tumble_threshold_value for item in hardware.readIMU()[3:6]):
+        spin_rate = hardware.readIMU()[1]
+        spin_magnitude = math.sqrt(spin_rate[0]**2 + spin_rate[1]**2 + spin_rate[2]**2)
+        if spin_magnitude > TumbleCheck.tumble_threshold_value:
             return True
         return False
         
@@ -120,18 +125,28 @@ class Detumble(State):
     def run(self, hardware):
         Detumble.detumble_second_count += 1
         TIME = 1 # seconds
-        self.calcMValue(hardware)
+        m_value = self.calcMValue(hardware)
+        hardware.runMagnetorquer( m_value)
         print('Detumbling the spacecraft for 1 s')
         return TIME
         
     def next(self, hardware):
         if Detumble.detumble_second_count >= 60:
             Detumble.detumble_second_count = 0
+            hardware.runMagnetorquer([0,0,0]) #Turns the magnetorquer off
             return PandaSat.battery_beacon_check
         return PandaSat.detumble
 
     def calcMValue(self, hardware):
         imu_reading = hardware.readIMU()
+
+        om0 = imu_reading[1]
+        B_body = imu_reading[2]
+
+        B_dot = -np.cross(om0,B_body)               # Compute B_dot
+        m_value = -np.multiply(hardware.m_max,np.sign(B_dot))*abs(np.tanh(om0))
+
+        return m_value
 
     
     def __str__(self):

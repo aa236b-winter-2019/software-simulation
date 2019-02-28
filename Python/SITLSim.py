@@ -1,6 +1,12 @@
 import numpy as np
 from StateMachine import *
-
+from igrffx import igrffx
+from dynamics import dynamics
+import julian
+from propagate import propagate
+from subroutines import *
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 class Environment:
     def propagate(self):
@@ -104,7 +110,10 @@ class SoftwareSimHardware(Hardware):
         self.max_battery_capacity = 159840 #In J
         self.uplink_requested = False
         self.downlink_requested = False
-        self.time = 0 #should put this in julian date....?
+
+        # Initial time in MJD
+        self.time = 54372.78 # MJD
+
         self.payload_time = [1e7]
 
         # Physical properties
@@ -123,6 +132,10 @@ class SoftwareSimHardware(Hardware):
         m_max = I_max*area_coil                        # Maximum magnetic moment (A.msq)
         self.m_max = np.reshape(m_max,(1,3))
         self.power_max = voltage_max*I_max                  # Max power consumed (W)
+        self.m_value = [0, 0, 0] #maqnetorquer initially off
+
+        self.initialize_orbit()
+        aaaa = 1
 
 
     def getHardwareProperties(self):
@@ -133,6 +146,7 @@ class SoftwareSimHardware(Hardware):
 
         Assumptions:
         accelerations aren't used and can be set to zero
+        Currently no noise
 
         Source:
         N/A
@@ -141,15 +155,27 @@ class SoftwareSimHardware(Hardware):
         None
 
         Output:
-        9 element tuple in order of accelerations, rotation velocities, magnetic field readings
+        3 3-element tuples in order of accelerations, rotation velocities, magnetic field readings
         in the body frame
 
         Properties Used:
         None
-        """   
+        """
 
-        # Obvious placeholder. 
-        return (0, 0, 0, 0, 0, 0, 0, 0, 0)
+        rv_eci = self.state[0:6]                      # Initial Orbit State Vector
+        omq = self.state[6:]                          # Initial Angular Velocity (rad/s) and Quaternion 
+
+
+        # Calculate Earth's Magnetic Field in ECI
+        t0 = julian.from_jd(self.time, fmt='mjd')            # Convert mjd into seconds
+        B_eci = igrffx(rv_eci[0:3],t0)*10**-9
+
+        q = omq[3:7]
+
+        # Rotate B_eci into Satellite Body Frame
+        B_body = np.dot(q2rot(q),B_eci)   
+
+        return ([0, 0, 0], omq[0:3], B_body)
 
     def checkBatteryPercent(self):
         """Returns the values battery current percentage
@@ -192,7 +218,31 @@ class SoftwareSimHardware(Hardware):
         None
         """
 
+        self.m_value = m_value
+
         #THIS SHOULD SET A VALUE IN THE SIMULATION PROPAGATE OR SOMETHING
+
+    def initialize_orbit(self):
+        # Orbital Elements and Parameters
+        a = 6917.50              # Orbit Semi-Major Axis (km)
+        e = 0.000287             # Eccentricity
+        i = 28.47                # Inclination (deg)
+        RAAN = 176.23            # Right Ascension of Ascending Node (deg)
+        w = 82.61                # Argument of Perigee (deg)
+        anom = 319.41            # Mean Anomaly (deg)
+        mu = 3.986e5             # Earth Standard Gravitational Parameter (km^3/s^2)
+        T = 2*np.pi*np.sqrt((a**3)/mu) # Orbital Period (s)
+        r_eci, v_eci = OE2ECI(a, e, i, RAAN, w, anom, mu)
+
+        # Initialize Known Variables and Initial Conditions
+        rv_eci0 = np.append(r_eci, v_eci)   # Initial Orbit State Vector
+        om = 0.25*np.array([1,1,1])         # Initial Angular Velocity (rad/s)
+        q = np.array([0,0,1,0])             # Initial Quaternion, Identity
+        torque = np.array([0,0,0])          # Initial Torque
+        power = np.array([0])               # Initial Power
+        omqtp0 = np.concatenate((om,q,torque,power)) # Initial Attitude State Vector  
+
+        self.state = np.concatenate((rv_eci0, omqtp0))
 
 
 # Static variable initialization:
@@ -213,17 +263,9 @@ PandaSat.payload_schedule_check = PayloadScheduleCheck()
 PandaSat.battery_payload_check = BatteryPayloadCheck()
 PandaSat.payload_on = PayloadOn()
 
-def initialize_orbit():
-    # Orbital Elements and Parameters
-    a = 6917.50              # Orbit Semi-Major Axis (km)
-    e = 0.000287             # Eccentricity
-    i = 28.47                # Inclination (deg)
-    RAAN = 176.23            # Right Ascension of Ascending Node (deg)
-    w = 82.61                # Argument of Perigee (deg)
-    anom = 319.41            # Mean Anomaly (deg)
-    mu = 3.986e5             # Earth Standard Gravitational Parameter (km^3/s^2)
-    T = 2*np.pi*np.sqrt((a**3)/mu) # Orbital Period (s)
-    r_eci, v_eci = OE2ECI(a, e, i, RAAN, w, anom, mu)
+
+
+    
 
 def runSimulationTime(state_machine, max_time):
     # Assumptions
@@ -234,18 +276,31 @@ def runSimulationTime(state_machine, max_time):
     while time <= max_time:
         delta_t, _ = state_machine.runStep(None)
         time += delta_t
+        state_machine.hardware.time += (delta_t/86400)
         print('current time: %.1f min' %(time/60))
 
 def runSimulationSteps(state_machine, num_steps):
     # Assumptions
     # time starts at zero
+    xyz_hist = np.zeros((num_steps, 3))
+    w_hist = np.zeros((num_steps, 3))
+    time_hist = np.zeros(num_steps)
 
-    J, J_inv, m_max, power_max = ps.hardware.getHardwareProperties()
+
     time = 0
     for i in range(num_steps):
+        xyz_hist[i, :] = state_machine.hardware.state[0:3]
+        w_hist[i,:] = state_machine.hardware.state[6:9]
+        time_hist[i] = time
         delta_t, _ = state_machine.runStep(None)
+        state_machine.hardware.state = propagate(state_machine.hardware, delta_t)
+        state_machine.hardware.time += (delta_t/86400)
+
+
         time += delta_t
         print('current time: %.1f min' %(time/60))
+
+    return (xyz_hist, time_hist, w_hist)
 
 
 #Simulation
@@ -255,9 +310,34 @@ def runSimulationSteps(state_machine, num_steps):
 hardware = SoftwareSimHardware()
 #inputs = (None,None,None,None,None, None, None, None, None)
 ps = PandaSat(hardware)
-runSimulationSteps(ps, 11)
+xyz_hist, time_hist, w_hist = runSimulationSteps(ps, 5)
+
+
+# Plot Orbit 
+plt.figure()
+ax=plt.axes(projection='3d')
+ax.plot3D(xyz_hist[:,0],xyz_hist[:,1],xyz_hist[:,2],'r')
+ax.axis('equal')
+plt.xlabel('[km]')
+plt.ylabel('[km]')
+ax.set_title('Detumbling Orbit Dynamics')
+plt.show()
+
+# Plot Omega
+f,(ax1,ax2,ax3)=plt.subplots(3,1,sharey=True)
+plt.rcParams['axes.grid'] = True
+ax1.plot(time_hist/60,w_hist[:,0])
+plt.ylabel('\omega_1')
+plt.xlabel('t(min)')
+ax1.set_title('Angular Velocity with Bdot controller')
+ax2.plot(time_hist/60,w_hist[:,1])
+plt.ylabel('\omega_2')
+plt.xlabel('t(min)')
+ax3.scatter(time_hist/60,w_hist[:,2])
+plt.ylabel('\omega_3')
+plt.xlabel('t(min)')
+plt.show()
 #ps.runAll(inputs)
-print('\n')
 #orbit_sim.requestUplink()
 #inputs2 = (None,None,None,None,None, None, None, None)
 #ps.runAll(inputs2)
