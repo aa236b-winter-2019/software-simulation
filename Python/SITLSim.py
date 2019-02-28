@@ -284,6 +284,9 @@ def runSimulationSteps(state_machine, num_steps):
     # time starts at zero
     xyz_hist = np.zeros((num_steps, 3))
     w_hist = np.zeros((num_steps, 3))
+    q_hist = np.zeros((num_steps, 4))
+    torque_hist = np.zeros((num_steps, 3))
+    power_hist = np.zeros((num_steps, 1))
     time_hist = np.zeros(num_steps)
 
 
@@ -291,6 +294,9 @@ def runSimulationSteps(state_machine, num_steps):
     for i in range(num_steps):
         xyz_hist[i, :] = state_machine.hardware.state[0:3]
         w_hist[i,:] = state_machine.hardware.state[6:9]
+        q_hist[i,:] = state_machine.hardware.state[9:13]
+        torque_hist[i,:] = state_machine.hardware.state[13:16]
+        power_hist[i,:] = state_machine.hardware.state[16:17]
         time_hist[i] = time
         delta_t, _ = state_machine.runStep(None)
         state_machine.hardware.state = propagate(state_machine.hardware, delta_t)
@@ -300,7 +306,7 @@ def runSimulationSteps(state_machine, num_steps):
         time += delta_t
         #print('current time: %.1f min' %(time/60))
 
-    return (xyz_hist, time_hist, w_hist)
+    return (time_hist, xyz_hist, w_hist, q_hist, torque_hist, power_hist)
 
 
 #Simulation
@@ -310,7 +316,7 @@ def runSimulationSteps(state_machine, num_steps):
 hardware = SoftwareSimHardware()
 #inputs = (None,None,None,None,None, None, None, None, None)
 ps = PandaSat(hardware)
-xyz_hist, time_hist, w_hist = runSimulationSteps(ps, 6000)
+time_hist, xyz_hist, w_hist, q_hist, torque_hist, power_hist = runSimulationSteps(ps, 10000)
 #print(w_hist)
 
 # Plot Orbit 
@@ -321,7 +327,6 @@ ax.axis('equal')
 plt.xlabel('[km]')
 plt.ylabel('[km]')
 ax.set_title('Detumbling Orbit Dynamics')
-plt.show()
 
 # Plot Omega
 f,(ax1,ax2,ax3)=plt.subplots(3,1,sharey=True)
@@ -339,6 +344,47 @@ ax3.plot(time_hist/60,w_hist[:,2])
 plt.ylabel('\omega_3')
 plt.xlabel('t(min)')
 plt.ylim([0, None])
+
+# Plot Quaternion
+f,(ax1,ax2,ax3,ax4)=plt.subplots(4,1,sharey=True)
+plt.rcParams['axes.grid'] = True
+ax1.plot(time_hist/60,q_hist[:,0])
+plt.ylabel('q_1')
+plt.xlabel('t(min)')
+ax1.set_title('Quaternion Dynamics')
+ax2.plot(time_hist/60,q_hist[:,1])
+plt.ylabel('q_2')
+plt.xlabel('t(sec)')
+ax3.plot(time_hist/60,q_hist[:,2])
+plt.ylabel('q_3')
+plt.xlabel('t(min)')
+ax4.plot(time_hist/60,q_hist[:,3])
+plt.ylabel('q_4')
+plt.xlabel('t(min)')
+
+# Plot Torque
+#Tspan_torque = np.arange(0, T/n*epochs, T/n)
+f,(ax1,ax2,ax3)=plt.subplots(3,1,sharey=True)
+plt.rcParams['axes.grid'] = True
+ax1.plot(time_hist/60,torque_hist[:,0])
+plt.ylabel('Tx()')
+plt.xlabel('t(min)')
+ax1.set_title('Torque')
+ax2.plot(time_hist/60,torque_hist[:,1])
+plt.ylabel('Ty()')
+plt.xlabel('t(min)')
+ax3.plot(time_hist/60,torque_hist[:,2])
+plt.ylabel('Tz()')
+plt.xlabel('t(min)')
+
+# Plot Power and Compute Energy Consumption
+energy_consumed = np.trapz(power_hist[:,0],time_hist)
+print('Total energy consumed ' + str(energy_consumed))
+plt.figure()
+plt.plot(time_hist/60,power_hist[:,0],'r')
+plt.xlabel('Time (min)')
+plt.ylabel('Power consumption (W)')
+plt.title('Power consumption ')
 plt.show()
 #ps.runAll(inputs)
 #orbit_sim.requestUplink()
