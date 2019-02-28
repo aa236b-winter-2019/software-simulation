@@ -185,3 +185,27 @@ plt.xlabel('Time (min)')
 plt.ylabel('Power consumed (W)')
 plt.title('Power consumption ')
 plt.show()
+
+
+
+#new stuff I've added
+flux_val = np.zeros(len(Tspan))
+
+from sunlocate import sunlocate
+from sunflux import sunflux
+
+
+for k in range(1,len(Tspan)):
+	mjd = 54372.78 + (Tspan[k])/(60*60*24)
+
+	Sun2Earth=sunlocate(mjd)
+
+	flux_val[k] = sunflux(np.transpose(r_hist[k,0:3]), Sun2Earth, np.transpose(q_hist[k,0:4]))
+
+
+plt.figure()
+plt.plot(Tspan[1:]/60,flux_val[1:],'r')
+plt.xlabel('Time (min)')
+plt.ylabel('Power Generated (W)')
+plt.title('Power Generation')
+plt.show()
