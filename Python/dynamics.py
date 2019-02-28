@@ -50,7 +50,7 @@ def dynamics(init_state, t, mu, J, J_inv, B_eci, m_max, m_value, power_max):
         
         torque=torque.reshape((3,))
         
-        power = np.sum(np.dot(np.square(m_value/m_max),power_max))
+        power = np.sum((np.square(m_value/m_max) * power_max))
  
         # matrix linear equation
         om_dot = np.dot(J_inv, -np.cross(om0,np.dot(J,om0))+torque.T).T

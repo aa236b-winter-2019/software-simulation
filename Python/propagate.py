@@ -38,7 +38,7 @@ def propagate(hardware, deltaT):
     # delta time of 1 s which is required by dynamics
     tspan = np.arange(0, deltaT+1, 1)
     rv_eci = odeint(dynamics, rv_eci0, tspan, args=(mu,J,J_inv,0,0,0, 0))
-    print('mvalue: ' + str(m_value))	
+    #print('mvalue: ' + str(m_value))	
     omq = odeint(dynamics, omq0, tspan, args=(mu,J,J_inv,B_eci,m_max, m_value, power_max)) # This propagates with torque coils ON (add flag later?)
     
     # Update New Initial Conditions and Store Propagated State

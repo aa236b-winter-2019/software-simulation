@@ -10,6 +10,7 @@ import math
 import numpy as np
 
 class State:
+    verbose_flag = False
     def run(self):
         assert 0, "run not implemented"
     def next(self, input):
@@ -42,7 +43,8 @@ class StateMachine:
 class Hold(State):
     def run(self, hardware):
         TIME = 60 # seconds
-        print("Hold: Initial Boot and hold")
+        if State.verbose_flag:
+            print("Hold: Initial Boot and hold")
         #super(Hold, Hold).propagate(hardware.current_state)
         return TIME
 
@@ -55,7 +57,8 @@ class Hold(State):
 class DeployAntenna(State):
     def run(self, hardware):
         TIME = 60 # seconds
-        print("Deploying Antenna")
+        if State.verbose_flag:
+            print("Deploying Antenna")
         return TIME
 
     def next(self, hardware):
@@ -70,7 +73,8 @@ class TumbleCheck(State):
     tumble_threshold_value = .01745 #rad/s = 1 deg/s
     def run(self, hardware):
         TIME = 1 # seconds
-        print('Checking the tumbling rate')
+        if State.verbose_flag:
+            print('Checking the tumbling rate')
         return TIME
         
     def next(self, hardware):
@@ -94,7 +98,8 @@ class TumbleCheck(State):
 class Sleep(State):
     def run(self, hardware):
         TIME = 60 # seconds
-        print('Sleep Mode - 1 min')
+        if State.verbose_flag:
+            print('Sleep Mode - 1 min')
         return TIME
         
     def next(self, hardware):
@@ -107,7 +112,8 @@ class BatteryTumbleCheck(State):
     #CHANGE TO CHECK BATTERY VOLTAGE ON ACTUAL FLIGHT SOFTWARE
     def run(self, hardware):
         TIME = 1 # seconds
-        print('Checking battery voltage before 1 min of detumbling')
+        if State.verbose_flag:
+            print('Checking battery voltage before 1 min of detumbling')
         return TIME
         
     def next(self, hardware):
@@ -127,7 +133,8 @@ class Detumble(State):
         TIME = 1 # seconds
         m_value = self.calcMValue(hardware)
         hardware.runMagnetorquer( m_value)
-        print('Detumbling the spacecraft for 1 s')
+        if State.verbose_flag:
+            print('Detumbling the spacecraft for 1 s')
         return TIME
         
     def next(self, hardware):
@@ -156,7 +163,8 @@ class BatteryBeaconCheck(State):
     battery_beacon_threshold = 30 #Percent
     def run(self, hardware):
         TIME = 1 # seconds
-        print('Checking battery voltage before sending beacon')
+        if State.verbose_flag:
+            print('Checking battery voltage before sending beacon')
         return TIME
         
     def next(self, hardware):
@@ -171,7 +179,8 @@ class BatteryBeaconCheck(State):
 class Beacon(State):
     def run(self, hardware):
         TIME = 10 # seconds
-        print('Sending health data beacon signal')
+        if State.verbose_flag:
+            print('Sending health data beacon signal')
         return TIME
     
     def next(self, hardware):
@@ -183,7 +192,8 @@ class Beacon(State):
 class Listen(State):
     def run(self, hardware):
         TIME = 15 # seconds
-        print('Listening for ground signal for 15s')
+        if State.verbose_flag:
+            print('Listening for ground signal for 15s')
         return TIME
         
     def next(self, hardware):
@@ -195,7 +205,8 @@ class Listen(State):
 class UplinkCheck(State):
     def run(self, hardware):
         TIME = 1 # seconds
-        print('Checking if an uplink was made')
+        if State.verbose_flag:
+            print('Checking if an uplink was made')
         return TIME
         
     def next(self, hardware):
@@ -209,7 +220,8 @@ class UplinkCheck(State):
 class ProcessUplink(State):
     def run(self, hardware):
         TIME = 10 # seconds
-        print('Processing uplink')
+        if State.verbose_flag:
+            print('Processing uplink')
         hardware.environment.uplinkRequested = False #Resets this flag
         return TIME
         
@@ -222,7 +234,8 @@ class ProcessUplink(State):
 class DownlinkCheck(State):
     def run(self, hardware):
         TIME = 1 # seconds
-        print('Checking for downlink')
+        if State.verbose_flag:
+            print('Checking for downlink')
         return TIME
         
     def next(self, hardware):
@@ -235,7 +248,8 @@ class DownlinkCheck(State):
 class Downlink(State):
     def run(self, hardware):
         TIME = 5*60 # seconds
-        print('Downlinking to ground station')
+        if State.verbose_flag:
+            print('Downlinking to ground station')
         return TIME
         
     def next(self, hardware):
@@ -247,7 +261,8 @@ class Downlink(State):
 class PayloadScheduleCheck(State):
     def run(self, hardware):
         TIME = 1 # seconds
-        print('Checking if a payload operation is requested')
+        if State.verbose_flag:
+            print('Checking if a payload operation is requested')
         return TIME
         
     def next(self, hardware):
@@ -262,7 +277,8 @@ class BatteryPayloadCheck(State):
     battery_payload_threshold = 30 # Percent
     def run(self, hardware):
         TIME = 1 # seconds
-        print('Checking battery voltage before turning payload on')
+        if State.verbose_flag:
+            print('Checking battery voltage before turning payload on')
         return TIME
         
     def next(self, hardware):
@@ -277,7 +293,8 @@ class BatteryPayloadCheck(State):
 class PayloadOn(State):
     def run(self, hardware):
         TIME = 5*60 # seconds
-        print('Turn the payload on and run')
+        if State.verbose_flag:
+            print('Turn the payload on and run')
         return TIME
         
     def next(self, hardware):
@@ -288,4 +305,4 @@ class PayloadOn(State):
 class PandaSat(StateMachine):
     def __init__(self, hardware):
         # Initial state
-        StateMachine.__init__(self, PandaSat.hold, hardware)
+        StateMachine.__init__(self, PandaSat.detumble, hardware)

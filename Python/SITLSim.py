@@ -298,7 +298,7 @@ def runSimulationSteps(state_machine, num_steps):
 
 
         time += delta_t
-        print('current time: %.1f min' %(time/60))
+        #print('current time: %.1f min' %(time/60))
 
     return (xyz_hist, time_hist, w_hist)
 
@@ -310,7 +310,7 @@ def runSimulationSteps(state_machine, num_steps):
 hardware = SoftwareSimHardware()
 #inputs = (None,None,None,None,None, None, None, None, None)
 ps = PandaSat(hardware)
-xyz_hist, time_hist, w_hist = runSimulationSteps(ps, 110)
+xyz_hist, time_hist, w_hist = runSimulationSteps(ps, 6000)
 #print(w_hist)
 
 # Plot Orbit 
@@ -329,13 +329,16 @@ plt.rcParams['axes.grid'] = True
 ax1.plot(time_hist/60,w_hist[:,0])
 plt.ylabel('\omega_1')
 plt.xlabel('t(min)')
+plt.ylim([0, None])
 ax1.set_title('Angular Velocity with Bdot controller')
 ax2.plot(time_hist/60,w_hist[:,1])
 plt.ylabel('\omega_2')
 plt.xlabel('t(min)')
-ax3.scatter(time_hist/60,w_hist[:,2])
+plt.ylim([0, None])
+ax3.plot(time_hist/60,w_hist[:,2])
 plt.ylabel('\omega_3')
 plt.xlabel('t(min)')
+plt.ylim([0, None])
 plt.show()
 #ps.runAll(inputs)
 #orbit_sim.requestUplink()
