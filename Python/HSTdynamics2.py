@@ -39,7 +39,7 @@ def HSTdynamics2(init_state, t, mu, J, J_inv, B_eci, m_max, power_max, Sun2Earth
     B_dot = -np.cross(om0,B_body)                                               # Compute B_dot
     m_value = -np.multiply(m_max,np.sign(B_dot))*abs(np.tanh(om0))              # Direction of Magnetic Moment   
     torque = np.cross(m_value,B_body)                                           # Compute Torque
-    torque = torque*(abs(om0)>1*np.pi/180)                                      # Turn off Torque within Omega Limits 
+    torque = torque*(np.linalg.norm(om0)>1*np.pi/180)                                      # Turn off Torque within Omega Limits 
     
     powercon = np.sum(np.dot(np.square(m_value/m_max),power_max))      
     powergen = sunflux(np.transpose(rvec), Sun2Earth, np.transpose(q0))
