@@ -135,6 +135,7 @@ class SoftwareSimHardware(Hardware):
         self.m_value = [0, 0, 0] #maqnetorquer initially off
 
         self.initialize_orbit()
+        self.setPowerDraw()
         aaaa = 1
 
 
@@ -243,6 +244,24 @@ class SoftwareSimHardware(Hardware):
         omqtp0 = np.concatenate((om,q,torque,power)) # Initial Attitude State Vector  
 
         self.state = np.concatenate((rv_eci0, omqtp0))
+
+    def setPowerDraw(self):
+        self.power_draw_dict = {'Hold state': 1.0, 
+            'Deploy antenna state': 1.1,
+            'Tumble check state': 1.2,
+            'Sleep state': 1.3,
+            'Battery tumble check state': 1.4,
+            'Detumble state': 1.5, 
+            'Battery beacon check state': 1.6,
+            'Beacon state': 1.7,
+            'Listen state': 1.8,
+            'Uplink check state': 1.9,
+            'Process uplink state': 2.0,
+            'Downlink check state': 2.1,
+            'Downlink state': 2.2,
+            'Payload schedule check state': 2.3,
+            'Battery payload check state': 2.4,
+            'Payload on state': 2.5}
 
 
 # Static variable initialization:

@@ -36,8 +36,9 @@ class StateMachine:
         self.currentState = next_state
 
         return (delta_t, str(next_state))
-        
 
+    def getCurrentState(self):
+        return self.currentState
 
 
 class Hold(State):
@@ -138,9 +139,11 @@ class Detumble(State):
         return TIME
         
     def next(self, hardware):
+        #ANY NEXT STATE SHOULD CALL hardware.runMagnetorquer([0,0,0])
+        # EXCEPT DETUMBLE
         if Detumble.detumble_second_count >= 10:
             Detumble.detumble_second_count = 0
-            hardware.runMagnetorquer([0,0,0]) #Turns the magnetorquer off
+            #hardware.runMagnetorquer([0,0,0]) #Turns the magnetorquer off
             return PandaSat.battery_beacon_check
         return PandaSat.detumble
 
@@ -162,6 +165,7 @@ class Detumble(State):
 class BatteryBeaconCheck(State):
     battery_beacon_threshold = 30 #Percent
     def run(self, hardware):
+        hardware.runMagnetorquer([0,0,0])
         TIME = 1 # seconds
         if State.verbose_flag:
             print('Checking battery voltage before sending beacon')
@@ -272,6 +276,9 @@ class PayloadScheduleCheck(State):
         if current_time > hardware.payload_time[0] - margin:
             return PandaSat.battery_payload_check
         return PandaSat.tumble_check
+
+    def __str__(self):
+        return('Payload schedule check state')
     
 class BatteryPayloadCheck(State):
     battery_payload_threshold = 30 # Percent
@@ -300,9 +307,14 @@ class PayloadOn(State):
     def next(self, hardware):
 
         return PandaSat.tumble_check
+
+    def __str__(self):
+        return('Payload on state')
         
 
 class PandaSat(StateMachine):
     def __init__(self, hardware):
         # Initial state
         StateMachine.__init__(self, PandaSat.detumble, hardware)
+
+
