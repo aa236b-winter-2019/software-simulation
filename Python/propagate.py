@@ -37,7 +37,7 @@ def propagate(hardware, deltaT, current_state):
     
     # Calculate Earth's Magnetic Field in ECI
     t0 = julian.from_jd(mjd, fmt='mjd')            # Convert mjd into seconds
-    B_eci = igrffx(init_state[0:3],t0)*10**-9
+    B_eci = igrffx(init_state[0:3],t0)
 
     # Find the sun to earth vector
     Sun2Earth = sunlocate(mjd) 
