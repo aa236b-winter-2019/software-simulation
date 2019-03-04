@@ -49,7 +49,7 @@ m_value= np.zeros((1,3))                                                        
 # Calculate Earth's Magnetic Field and Sun's Location in ECI
 mjd = 54372.78                                                                  # Mean Julian Date of Initial Epoch
 t0 = julian.from_jd(mjd, fmt='mjd')                                             # Convert mjd into seconds
-B_eci = igrffx(r,t0)*10**-9                                                     # Earth's Magnetic Field in ECI
+B_eci = igrffx(r,t0)                                                            # Earth's Magnetic Field in ECI
 Sun2Earth = sunlocate(mjd)                                                      # Unit Vector from Sun to Earth in ECI
 
 # Initialize the Magnetorquer Properties
@@ -97,7 +97,7 @@ for i in range (1,epochs):
     dt = julian.from_jd(mjd, fmt='mjd')                                         # Convert mjd into seconds
     newtime = dt + datetime.timedelta(seconds=tspan[j])                         # Add time from Epoch 
     mjd_prop = 54372.78 + (tspan[j])/(60*60*24)                                 # newtime in mjd
-    B_eci = igrffx(init_state[0:3],newtime)*10**-9                              # New B_eci for Next Time Step 
+    B_eci = igrffx(init_state[0:3],newtime)                                     # New B_eci for Next Time Step 
     Sun2Earth=sunlocate(mjd_prop)                                               # New Sun2Earth for Next Time Step
     
 
