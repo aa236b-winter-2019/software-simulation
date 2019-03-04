@@ -1,4 +1,4 @@
-def dynamics(init_state, t, mu, J, J_inv, B_eci, m_max, m_value, power_max):
+def dynamics(init_state, t, mu, J, J_inv, B_eci, m_max, m_value, power_max, Sun2Earth, baseline_power):
 # HSTdynamics: Contains full ODE dynamics for all spacecraft states.
 #
 # Assumptions:
@@ -13,51 +13,46 @@ def dynamics(init_state, t, mu, J, J_inv, B_eci, m_max, m_value, power_max):
 #
 # Outputs:
 #   x_dot - linear equation containing ODEs for all states
+
     import numpy as np
     from subroutines import qkin
     from subroutines import qmult
     from subroutines import q2rot
+    from sunflux import sunflux
 #    import pdb
 
- 
-    if init_state.size == 6: # linear position and velocity
-        # Unpack Initial State
-        rvec = init_state[:3]
-        vvec = init_state[3:6]
-        r = np.linalg.norm(rvec)
+    # Unpack Initial State
+    rvec = init_state[:3]
+    vvec = init_state[3:6]
+    r = np.linalg.norm(rvec)
+    om0 = init_state[6:9]
+    q0 = init_state[9:13]
+    torque0 = init_state[13:16]
+    powercon0 = init_state[16:17]
+    powergen0 = init_state[17:18]
 
-        # Matrix Linear Equation
-        rv_dot = np.dot(np.block([[np.zeros((3,3)),      np.eye(3)],
-                           [-(mu/r**3)*np.eye(3), np.zeros((3,3))]]), init_state)
-        x_dot = np.array(rv_dot)
-    elif init_state.size == 11: # Angular Velocity, Quaternion, Torque, Power
-        # Unpack Initial State
-        om0 = init_state[:3]
-        q0 = init_state[3:7]
-        torque0 = init_state[7:10]
-        power0 = init_state[10:]
-        
-        # Rotate B_eci into Satellite Body Frame
-        B_body = np.dot(q2rot(q0),B_eci)
+    # Rotate B_eci into Satellite Body Frame
+    B_body = np.dot(q2rot(q0),B_eci)
+
+    # Compute Torque using B-dot Control Law for Next Epoch
+    B_dot = -np.cross(om0,B_body)                                               # Compute B_dot
+    #m_value = -np.multiply(m_max,np.sign(B_dot))*abs(np.tanh(om0))              # Direction of Magnetic Moment   
+    torque = np.cross(m_value,B_body)[0]                                           # Compute Torque
+    #torque = torque*(np.linalg.norm(om0)>1*np.pi/180)                          # Turn off Torque within Omega Limits 
     
-        # Compute Torque using B-dot Control Law for Next Epoch
-        B_dot = -np.cross(om0,B_body)               # Compute B_dot
-        #m_value = -np.multiply(m_max,np.sign(B_dot))*abs(np.tanh(om0))       # Direction of Magnetic Mom.
-        
-        torque = np.cross(m_value,B_body)      # Compute Torque
-        #print('mvalue: ' + str(m_value))
-        #torque = torque*(abs(om0)>1*np.pi/180)               # Turn off Torque within Omega Limits
-        
-        torque=torque.reshape((3,))
-        
-        power = np.sum((np.square(m_value/m_max) * power_max))
+    powercon = np.sum(np.dot(np.square(m_value/m_max),power_max))      
+    powergen = sunflux(np.transpose(rvec), Sun2Earth, np.transpose(q0))
  
-        # matrix linear equation
-        om_dot = np.dot(J_inv, -np.cross(om0,np.dot(J,om0))+torque.T).T
-        q_dot = qkin(q0, om0)
-        torque_dot = torque - torque0
-        power_dot = power - power0
-        x_dot = np.concatenate((om_dot, q_dot, torque_dot, power_dot))
+    # matrix linear equation
+    rv_dot = np.dot(np.block([[np.zeros((3,3)),      np.eye(3)],
+                   [-(mu/r**3)*np.eye(3), np.zeros((3,3))]]), init_state[:6])
+
+    om_dot = np.dot(J_inv, -np.cross(om0,np.dot(J,om0))+torque)
+    q_dot = qkin(q0, om0)
+    torque_dot = torque - torque0
+    powercon_dot = powercon - powercon0
+    powergen_dot = [0] #powergen - powergen0
+    x_dot = np.concatenate((rv_dot, om_dot, q_dot, torque_dot, powercon_dot, powergen_dot))
     return x_dot
 
 

@@ -8,56 +8,9 @@ from subroutines import *
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
-class Environment:
-    def propagate(self):
-        assert 0, "propagate not implemented"
-
-    def fake_imu(self):
-        assert 0, "fake_imu not implemented"
-
-    def fake_uplink(self):
-        assert 0, "fake_uplink not implemented"
-        
-    def fake_downlink(self):
-        assert 0, "fake_uplink not implemented"
-
-    def propagate(self, initial_state, control_effort, timestep):
-        # This should call orbit propagator
-        print('Propagating the time forward by %.1f seconds' %timestep)
-        return initial_state + 1*timestep
-
-class SoftwareSimulation(Environment):
-    def __init__(self):
-        self.state = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] 
-        # The state vector [jx, jy, jz, then 4 quaternions, x, y, z, xdot, ydot, zdot]
-        self.uplinkRequested = False
-        self.downlinkRequested = False
-        
-    def requestUplink(self):
-        self.uplinkRequested = True
-        
-    def requestDownlink(self):
-        self.downlinkRequested = True
-
-class PhysicalSat:
-    def __init__(self, environment):
-        self.angular_velocity = [0,0,0]
-        self.battery_voltage = 10
-        self.battery_beacon_threshold = 3.6 #Volts
-        self.battery_tumble_threshold = 3.6 #Volts
-        self.environment = environment
-        self.time = 2458517.500000 #Julian date for February 3rd, 2018 at 00:00
-        self.battery_payload_threshold = 3.6 #Volts
-        self.payload_time = [1e7, 1e7]
-        self.total_capacity = 159840 # In Joules
-        
-        
-    def getBatteryVoltage(self):
-        return self.battery_voltage
-    
-    def getAngularVelocity(self):
-        # How are we going to estimate how the vechile perceives it's actual state?
-        return self.angular_velocity
+# TODO
+# Put actual numbers in for the power dictionary
+# Fix runTime method
 
 class Hardware:
     def readIMU(self):
@@ -132,9 +85,9 @@ class SoftwareSimHardware(Hardware):
         m_max = I_max*area_coil                        # Maximum magnetic moment (A.msq)
         self.m_max = np.reshape(m_max,(1,3))
         self.power_max = voltage_max*I_max                  # Max power consumed (W)
-        self.m_value = [0, 0, 0] #maqnetorquer initially off
+        self.m_value = [[0, 0, 0]] #maqnetorquer initially off
 
-        self.initialize_orbit()
+        self.initializeState()
         self.setPowerDraw()
         aaaa = 1
 
@@ -223,7 +176,7 @@ class SoftwareSimHardware(Hardware):
 
         #THIS SHOULD SET A VALUE IN THE SIMULATION PROPAGATE OR SOMETHING
 
-    def initialize_orbit(self):
+    def initializeState(self):
         # Orbital Elements and Parameters
         a = 6917.50              # Orbit Semi-Major Axis (km)
         e = 0.000287             # Eccentricity
@@ -237,13 +190,13 @@ class SoftwareSimHardware(Hardware):
 
         # Initialize Known Variables and Initial Conditions
         rv_eci0 = np.append(r_eci, v_eci)   # Initial Orbit State Vector
-        om = 0.015*np.array([1,1,1])         # Initial Angular Velocity (rad/s)
+        om = 0.25*np.array([1,1,1])         # Initial Angular Velocity (rad/s)
         q = np.array([0,0,1,0])             # Initial Quaternion, Identity
         torque = np.array([0,0,0])          # Initial Torque
-        power = np.array([0])               # Initial Power
-        omqtp0 = np.concatenate((om,q,torque,power)) # Initial Attitude State Vector  
+        power = np.array([0, 0])             # Initial Power consumption and generation
+        omqtp0 = np.concatenate((om,q,torque)) # Initial Attitude State Vector  
 
-        self.state = np.concatenate((rv_eci0, omqtp0))
+        self.state = np.concatenate((rv_eci0, omqtp0, power))
 
     def setPowerDraw(self):
         self.power_draw_dict = {'Hold state': 1.0, 
@@ -290,13 +243,31 @@ def runSimulationTime(state_machine, max_time):
     # Assumptions
     # time starts at zero
 
-    J, J_inv, m_max, power_max = ps.hardware.getHardwareProperties()
+    xyz_hist = np.array([None, None, None])
+    w_hist = []
+    q_hist = []
+    torque_hist = []
+    power_hist = []
+    time_hist = []
+
+    #J, J_inv, m_max, power_max = ps.hardware.getHardwareProperties()
     time = 0
     while time <= max_time:
         delta_t, _ = state_machine.runStep(None)
+        state_machine.hardware.state = propagate(state_machine.hardware, delta_t, str(state_machine.getCurrentState()))
+        state_machine.hardware.time += (delta_t/86400)
         time += delta_t
         state_machine.hardware.time += (delta_t/86400)
         print('current time: %.1f min' %(time/60))
+
+        xyz_hist = np.vstack((xyz_hist, state_machine.hardware.state[0:3]))
+        w_hist = np.append(w_hist, state_machine.hardware.state[6:9])
+        q_hist = np.append(q_hist, state_machine.hardware.state[9:13])
+        torque_hist = np.append(torque_hist, state_machine.hardware.state[13:16])
+        power_hist = np.append(power_hist, state_machine.hardware.state[16:18])
+        time_hist = np.append(time_hist, time)
+
+    return (time_hist, xyz_hist, w_hist, q_hist, torque_hist, power_hist)
 
 def runSimulationSteps(state_machine, num_steps):
     # Assumptions
@@ -305,27 +276,98 @@ def runSimulationSteps(state_machine, num_steps):
     w_hist = np.zeros((num_steps, 3))
     q_hist = np.zeros((num_steps, 4))
     torque_hist = np.zeros((num_steps, 3))
-    power_hist = np.zeros((num_steps, 1))
+    power_hist = np.zeros((num_steps, 2))
     time_hist = np.zeros(num_steps)
 
 
     time = 0
     for i in range(num_steps):
-        
+        #print(state_machine.getCurrentState())
         delta_t, _ = state_machine.runStep(None)
-        state_machine.hardware.state = propagate(state_machine.hardware, delta_t)
+        state_machine.hardware.state = propagate(state_machine.hardware, delta_t, str(state_machine.getCurrentState()))
         state_machine.hardware.time += (delta_t/86400)
         time += delta_t
         xyz_hist[i, :] = state_machine.hardware.state[0:3]
         w_hist[i,:] = state_machine.hardware.state[6:9]
         q_hist[i,:] = state_machine.hardware.state[9:13]
         torque_hist[i,:] = state_machine.hardware.state[13:16]
-        power_hist[i,:] = state_machine.hardware.state[16:17]
+        power_hist[i,:] = state_machine.hardware.state[16:18]
         time_hist[i] = time
         #print('current time: %.1f min' %(time/60))
 
     return (time_hist, xyz_hist, w_hist, q_hist, torque_hist, power_hist)
 
+
+
+def plotValues(time_hist, xyz_hist, w_hist, q_hist, torque_hist, power_hist):
+
+    # Plot Orbit 
+    plt.figure()
+    ax=plt.axes(projection='3d')
+    ax.plot3D(xyz_hist[:,0],xyz_hist[:,1],xyz_hist[:,2],'r')
+    ax.axis('equal')
+    plt.xlabel('[km]')
+    plt.ylabel('[km]')
+    ax.set_title('Detumbling Orbit Dynamics')
+
+    # Plot Omega
+    f,(ax1,ax2,ax3)=plt.subplots(3,1,sharey=True)
+    plt.rcParams['axes.grid'] = True
+    ax1.plot(time_hist/60,w_hist[:,0])
+    plt.ylabel('\omega_1')
+    plt.xlabel('t(min)')
+    plt.ylim([0, None])
+    ax1.set_title('Angular Velocity with Bdot controller')
+    ax2.plot(time_hist/60,w_hist[:,1])
+    plt.ylabel('\omega_2')
+    plt.xlabel('t(min)')
+    plt.ylim([0, None])
+    ax3.plot(time_hist/60,w_hist[:,2])
+    plt.ylabel('\omega_3')
+    plt.xlabel('t(min)')
+    plt.ylim([0, None])
+
+    # Plot Quaternion
+    f,(ax1,ax2,ax3,ax4)=plt.subplots(4,1,sharey=True)
+    plt.rcParams['axes.grid'] = True
+    ax1.plot(time_hist/60,q_hist[:,0])
+    plt.ylabel('q_1')
+    plt.xlabel('t(min)')
+    ax1.set_title('Quaternion Dynamics')
+    ax2.plot(time_hist/60,q_hist[:,1])
+    plt.ylabel('q_2')
+    plt.xlabel('t(sec)')
+    ax3.plot(time_hist/60,q_hist[:,2])
+    plt.ylabel('q_3')
+    plt.xlabel('t(min)')
+    ax4.plot(time_hist/60,q_hist[:,3])
+    plt.ylabel('q_4')
+    plt.xlabel('t(min)')
+
+    # Plot Torque
+    #Tspan_torque = np.arange(0, T/n*epochs, T/n)
+    f,(ax1,ax2,ax3)=plt.subplots(3,1,sharey=True)
+    plt.rcParams['axes.grid'] = True
+    ax1.plot(time_hist/60,torque_hist[:,0])
+    plt.ylabel('Tx()')
+    plt.xlabel('t(min)')
+    ax1.set_title('Torque')
+    ax2.plot(time_hist/60,torque_hist[:,1])
+    plt.ylabel('Ty()')
+    plt.xlabel('t(min)')
+    ax3.plot(time_hist/60,torque_hist[:,2])
+    plt.ylabel('Tz()')
+    plt.xlabel('t(min)')
+
+    # Plot Power and Compute Energy Consumption
+    energy_consumed = np.trapz(power_hist[:,0],time_hist)
+    print('Total energy consumed ' + str(energy_consumed))
+    plt.figure()
+    plt.plot(time_hist/60, power_hist[:,0],'r')
+    plt.xlabel('Time (min)')
+    plt.ylabel('Power consumption (W)')
+    plt.title('Power consumption ')
+    plt.show()
 
 #Simulation
 
@@ -334,76 +376,11 @@ def runSimulationSteps(state_machine, num_steps):
 hardware = SoftwareSimHardware()
 #inputs = (None,None,None,None,None, None, None, None, None)
 ps = PandaSat(hardware)
-time_hist, xyz_hist, w_hist, q_hist, torque_hist, power_hist = runSimulationSteps(ps, 11)
+time_hist, xyz_hist, w_hist, q_hist, torque_hist, power_hist = runSimulationTime(ps, 100)
 #print(w_hist)
 
-# Plot Orbit 
-plt.figure()
-ax=plt.axes(projection='3d')
-ax.plot3D(xyz_hist[:,0],xyz_hist[:,1],xyz_hist[:,2],'r')
-ax.axis('equal')
-plt.xlabel('[km]')
-plt.ylabel('[km]')
-ax.set_title('Detumbling Orbit Dynamics')
+plotValues(time_hist, xyz_hist, w_hist, q_hist, torque_hist, power_hist)
 
-# Plot Omega
-f,(ax1,ax2,ax3)=plt.subplots(3,1,sharey=True)
-plt.rcParams['axes.grid'] = True
-ax1.plot(time_hist/60,w_hist[:,0])
-plt.ylabel('\omega_1')
-plt.xlabel('t(min)')
-plt.ylim([0, None])
-ax1.set_title('Angular Velocity with Bdot controller')
-ax2.plot(time_hist/60,w_hist[:,1])
-plt.ylabel('\omega_2')
-plt.xlabel('t(min)')
-plt.ylim([0, None])
-ax3.plot(time_hist/60,w_hist[:,2])
-plt.ylabel('\omega_3')
-plt.xlabel('t(min)')
-plt.ylim([0, None])
-
-# Plot Quaternion
-f,(ax1,ax2,ax3,ax4)=plt.subplots(4,1,sharey=True)
-plt.rcParams['axes.grid'] = True
-ax1.plot(time_hist/60,q_hist[:,0])
-plt.ylabel('q_1')
-plt.xlabel('t(min)')
-ax1.set_title('Quaternion Dynamics')
-ax2.plot(time_hist/60,q_hist[:,1])
-plt.ylabel('q_2')
-plt.xlabel('t(sec)')
-ax3.plot(time_hist/60,q_hist[:,2])
-plt.ylabel('q_3')
-plt.xlabel('t(min)')
-ax4.plot(time_hist/60,q_hist[:,3])
-plt.ylabel('q_4')
-plt.xlabel('t(min)')
-
-# Plot Torque
-#Tspan_torque = np.arange(0, T/n*epochs, T/n)
-f,(ax1,ax2,ax3)=plt.subplots(3,1,sharey=True)
-plt.rcParams['axes.grid'] = True
-ax1.plot(time_hist/60,torque_hist[:,0])
-plt.ylabel('Tx()')
-plt.xlabel('t(min)')
-ax1.set_title('Torque')
-ax2.plot(time_hist/60,torque_hist[:,1])
-plt.ylabel('Ty()')
-plt.xlabel('t(min)')
-ax3.plot(time_hist/60,torque_hist[:,2])
-plt.ylabel('Tz()')
-plt.xlabel('t(min)')
-
-# Plot Power and Compute Energy Consumption
-energy_consumed = np.trapz(power_hist[:,0],time_hist)
-print('Total energy consumed ' + str(energy_consumed))
-plt.figure()
-plt.plot(time_hist/60,power_hist[:,0],'r')
-plt.xlabel('Time (min)')
-plt.ylabel('Power consumption (W)')
-plt.title('Power consumption ')
-plt.show()
 #ps.runAll(inputs)
 #orbit_sim.requestUplink()
 #inputs2 = (None,None,None,None,None, None, None, None)

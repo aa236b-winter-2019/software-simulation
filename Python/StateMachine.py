@@ -2,15 +2,15 @@
 # Based off state machine found here: https://python-3-patterns-idioms-test.readthedocs.io/en/latest/StateMachine.html
 
 #TODO
-# Add power consumption to each state
-# Add software in the loop hardware class
+# Make Hold state only run 1 min at a time for B_eci's sake
+# 
 # REMOVE NUMPY FROM DETUMBLE CALCS
 
 import math
 import numpy as np
 
 class State:
-    verbose_flag = True
+    verbose_flag = False
     def run(self):
         assert 0, "run not implemented"
     def next(self, input):
@@ -71,7 +71,7 @@ class DeployAntenna(State):
 class TumbleCheck(State):
     #FIX THE LOGIC HERE!!!!
     
-    tumble_threshold_value = .0001 #rad/s = 1 deg/s
+    tumble_threshold_value = 3*.0175 #rad/s = 1 deg/s
     def run(self, hardware):
         TIME = 1 # seconds
         if State.verbose_flag:
@@ -141,7 +141,7 @@ class Detumble(State):
     def next(self, hardware):
         #ANY NEXT STATE SHOULD CALL hardware.runMagnetorquer([0,0,0])
         # EXCEPT DETUMBLE
-        if Detumble.detumble_second_count >= 10:
+        if Detumble.detumble_second_count >= 60:
             Detumble.detumble_second_count = 0
             #hardware.runMagnetorquer([0,0,0]) #Turns the magnetorquer off
             return PandaSat.battery_beacon_check
@@ -165,7 +165,7 @@ class Detumble(State):
 class BatteryBeaconCheck(State):
     battery_beacon_threshold = 30 #Percent
     def run(self, hardware):
-        hardware.runMagnetorquer([0,0,0])
+        hardware.runMagnetorquer([[0,0,0]])
         TIME = 1 # seconds
         if State.verbose_flag:
             print('Checking battery voltage before sending beacon')
