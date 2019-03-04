@@ -9,12 +9,9 @@ def igrffx(eci_vec,time):
 	import datetime
 	from datetime import datetime
 	import astropy
-	#eci_vec is a xyz vector in ECI 
-	#output B_ECI is a 3 item array in units of nT
+	#eci_vec is a xyz vector in ECI  km
+	#output B_ECI is a 3 item array in units of T
 	
-	#get time 
-	#datetime(year, month, day, hour, minute, second, microsecond)
-	#time = datetime(year, month, day, hour, minute, second, microsecond)
 
 	#get our lat long and alt from ECI 
 	geod = pymap3d.eci2geodetic(1000*eci_vec, time, useastropy=True)
@@ -26,10 +23,7 @@ def igrffx(eci_vec,time):
 	#call igrf to get b vector in NED
 	#mag = igrf12.igrf('2019-01-12', glat=latitude, glon=longitude, alt_km=altitude/1000)
 	b = pyIGRF.igrf_value(latitude, longitude, altitude/1000, 2019)
-	#pull NED components out of xarray.dataset 
-	#b_north = mag.north.values[0]
-	#b_east = mag.east.values[0]
-	#b_down = mag.down.values[0]
+
 
 	#combine NED components back into an array
 	#NED = numpy.array([b_north,b_east,b_down])
@@ -39,7 +33,7 @@ def igrffx(eci_vec,time):
 	ECEF = navpy.ned2ecef(NED, latitude, longitude, altitude)
 
 	#convert from ECEF to ECI
-	B_ECI = pymap3d.ecef2eci(ECEF, time, useastropy=True)
+	B_ECI = (pymap3d.ecef2eci(ECEF, time, useastropy=True))*10**(-9)
 
 	return B_ECI
 
