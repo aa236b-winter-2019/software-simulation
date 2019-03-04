@@ -90,7 +90,8 @@ class TumbleCheck(State):
     def tumble_compare(self, hardware):
         # Implements the logic of the tumble check
         # Return True for tumbling too fast or False for not tumbling above the threshold
-        spin_rate = hardware.readIMU()[1]
+        spin_rate = hardware.readIMU()[1]*(3.14/180.0)   # reads IMU measurement in deg/s and converts to rad/s
+
         spin_magnitude = math.sqrt(spin_rate[0]**2 + spin_rate[1]**2 + spin_rate[2]**2)
         if spin_magnitude > TumbleCheck.tumble_threshold_value:
             return True
@@ -150,8 +151,8 @@ class Detumble(State):
     def calcMValue(self, hardware):
         imu_reading = hardware.readIMU()
 
-        om0 = imu_reading[1]
-        B_body = imu_reading[2]
+        om0 = imu_reading[1]*(3.14/180.0)
+        B_body = imu_reading[2]*10**-4
 
         B_dot = -np.cross(om0,B_body)               # Compute B_dot
         m_value = -np.multiply(hardware.m_max,np.sign(B_dot))*np.linalg.norm(np.tanh(om0))
