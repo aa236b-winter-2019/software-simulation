@@ -37,7 +37,7 @@ def HSTdynamics2(init_state, t, mu, J, J_inv, B_eci, m_max, power_max, Sun2Earth
 
     # Compute Torque using B-dot Control Law for Next Epoch
     B_dot = -np.cross(om0,B_body)                                               # Compute B_dot
-    m_value = -np.multiply(m_max,np.sign(B_dot))*abs(np.tanh(om0))              # Direction of Magnetic Moment   
+    m_value = -np.multiply(m_max,np.sign(B_dot))*np.linalg.norm(np.tanh(om0))              # Direction of Magnetic Moment   
     torque = np.cross(m_value,B_body)                                           # Compute Torque
     torque = torque*(np.linalg.norm(om0)>1*np.pi/180)                                      # Turn off Torque within Omega Limits 
     
