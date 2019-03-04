@@ -71,7 +71,7 @@ class DeployAntenna(State):
 class TumbleCheck(State):
     #FIX THE LOGIC HERE!!!!
     
-    tumble_threshold_value = 3*.0175 #rad/s = 1 deg/s
+    tumble_threshold_value = .0175 #rad/s = 1 deg/s
     def run(self, hardware):
         TIME = 1 # seconds
         if State.verbose_flag:
@@ -154,7 +154,7 @@ class Detumble(State):
         B_body = imu_reading[2]
 
         B_dot = -np.cross(om0,B_body)               # Compute B_dot
-        m_value = -np.multiply(hardware.m_max,np.sign(B_dot))*np.abs(np.tanh(om0))
+        m_value = -np.multiply(hardware.m_max,np.sign(B_dot))*np.linalg.norm(np.tanh(om0))
 
         return m_value
 
