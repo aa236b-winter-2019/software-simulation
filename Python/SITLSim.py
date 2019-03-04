@@ -119,17 +119,24 @@ class SoftwareSimHardware(Hardware):
         rv_eci = self.state[0:6]                      # Initial Orbit State Vector
         omq = self.state[6:]                          # Initial Angular Velocity (rad/s) and Quaternion 
 
-
         # Calculate Earth's Magnetic Field in ECI
         t0 = julian.from_jd(self.time, fmt='mjd')            # Convert mjd into seconds
-        B_eci = igrffx(rv_eci[0:3],t0)*10**-9
+        B_eci = igrffx(rv_eci[0:3],t0)*10**-9 
+        
+
+        std_om = 8.75             # std dev in deg/s
+        std_b = 0.14              # std dev in guass
+
+        om = omq[:3]*180.0/np.pi + np.random.normal(0,std_om) # converting to deg/s and adding noise
+        B_eci = B_eci*10**4 +np.random.normal(0,std_b)             # converting to gauss and adding noise
 
         q = omq[3:7]
 
         # Rotate B_eci into Satellite Body Frame
         B_body = np.dot(q2rot(q),B_eci)   
 
-        return ([0, 0, 0], omq[0:3], B_body)
+        return ([0, 0, 0], om, B_body)
+
 
     def checkBatteryPercent(self):
         """Returns the values battery current percentage
@@ -376,7 +383,7 @@ def plotValues(time_hist, xyz_hist, w_hist, q_hist, torque_hist, power_hist):
 hardware = SoftwareSimHardware()
 #inputs = (None,None,None,None,None, None, None, None, None)
 ps = PandaSat(hardware)
-time_hist, xyz_hist, w_hist, q_hist, torque_hist, power_hist = runSimulationTime(ps, 100)
+time_hist, xyz_hist, w_hist, q_hist, torque_hist, power_hist = runSimulationSteps(ps, 5000)
 #print(w_hist)
 
 plotValues(time_hist, xyz_hist, w_hist, q_hist, torque_hist, power_hist)
