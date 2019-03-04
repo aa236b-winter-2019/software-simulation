@@ -51,7 +51,7 @@ def dynamics(init_state, t, mu, J, J_inv, B_eci, m_max, m_value, power_max, Sun2
     q_dot = qkin(q0, om0)
     torque_dot = torque - torque0
     powercon_dot = powercon - powercon0
-    powergen_dot = [0] #powergen - powergen0
+    powergen_dot = powergen - powergen0
     x_dot = np.concatenate((rv_dot, om_dot, q_dot, torque_dot, powercon_dot, powergen_dot))
     return x_dot
 
