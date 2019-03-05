@@ -35,7 +35,7 @@ J_inv = np.linalg.inv(J)                                                        
 
 # Convert Orbital ELements to Earth-Centered Inertial Frame Coordinates
 r, v = OE2ECI(a, e, i, RAAN, w, anom, mu)                                       # Initial Orbit State Vector
-om = 0.25*np.array([1,1,1])                                                     # Initial Angular Velocity (rad/s)
+om = 0.25*np.array([0.1,0.1,1])                                                     # Initial Angular Velocity (rad/s)
 q = np.array([0,0,1,0])                                                         # Initial Quaternion, Identity
 torque = np.array([0,0,0])                                                      # Initial Torque
 powercon = np.array([0])                                                        # Initial Power Consumption
@@ -49,7 +49,7 @@ m_value= np.zeros((1,3))                                                        
 # Calculate Earth's Magnetic Field and Sun's Location in ECI
 mjd = 54372.78                                                                  # Mean Julian Date of Initial Epoch
 t0 = julian.from_jd(mjd, fmt='mjd')                                             # Convert mjd into seconds
-B_eci = igrffx(r,t0)                                                            # Earth's Magnetic Field in ECI
+B_eci = igrffx(r,t0)                                                          # Earth's Magnetic Field in ECI
 Sun2Earth = sunlocate(mjd)                                                      # Unit Vector from Sun to Earth in ECI
 
 # Initialize the Magnetorquer Properties
@@ -58,7 +58,7 @@ n_coil = np.array([1, 1, 1])                                                    
 voltage_max = 8.4                                                               # Max Battery Voltage (V)
 resistance  = np.array([178.4,178.4,135])                                       # Coil Resistance (Ohm)
 I_max = np.divide(voltage_max,resistance)                                       # Max Current (A)
-m_max = I_max*np.multiply(area_coil,n_coil)                                     # Max Magnetic Moment (A m^2)
+m_max = I_max*np.multiply(area_coil,n_coil)/2.5                                     # Max Magnetic Moment (A m^2)
 power_max = voltage_max*I_max                                                   # Max Power Consumed (W)
 energy_consumed = 0                                                             # Initializing total energy consumption (J)
 
@@ -79,14 +79,14 @@ for i in range (1,epochs):
     state = odeint(HSTdynamics2, init_state, tspan, args)
     
     # Store Time History for Plotting
-    r_hist = np.concatenate((r_hist,state[:,0:3]),axis=0)
-    v_hist = np.concatenate((v_hist,state[:,3:6]),axis=0)
-    om_hist = np.concatenate((om_hist,state[:,6:9]),axis=0)
-    q_hist = np.concatenate((q_hist,state[:,9:13]),axis=0)
-    torque_hist = np.concatenate((torque_hist,state[:,13:16]),axis=0)
-    Pcon_hist = np.append(Pcon_hist,state[:,16:17])
-    Pgen_hist = np.append(Pgen_hist,state[:,17:])
-    Tspan = np.concatenate((Tspan,tspan),axis=0)
+    r_hist = np.concatenate((r_hist,state[1:,0:3]),axis=0)
+    v_hist = np.concatenate((v_hist,state[1:,3:6]),axis=0)
+    om_hist = np.concatenate((om_hist,state[1:,6:9]),axis=0)
+    q_hist = np.concatenate((q_hist,state[1:,9:13]),axis=0)
+    torque_hist = np.concatenate((torque_hist,state[1:,13:16]),axis=0)
+    Pcon_hist = np.append(Pcon_hist,state[1:,16:17])
+    Pgen_hist = np.append(Pgen_hist,state[1:,17:])
+    Tspan = np.concatenate((Tspan,tspan[1:]),axis=0)
     
     # Update the Inital Conditions for Next Epoch
     init_state = np.concatenate((r_hist[-1,:],v_hist[-1,:],om_hist[-1,:],
