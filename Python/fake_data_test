@@ -1,0 +1,16 @@
+import serial
+
+feather_port = '/dev/cu.usbserial-1450' #this is the computer to USB/Serial converter serial port
+
+ser = serial.Serial(feather_port)  # open serial port
+print(ser.name)         # check which port was really used
+ser.write(b'hello\n')     # write a string
+#ser.close()             # close port
+count = 0
+while count < 10:
+	line = ser.readline()
+	print(str(count) + str(': ') + chr(line) )
+	count += 1
+
+
+ser.close()
