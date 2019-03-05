@@ -7,7 +7,7 @@
 # REMOVE NUMPY FROM DETUMBLE CALCS
 
 import math
-import numpy as np
+#import numpy as np
 
 class State:
     verbose_flag = False
@@ -90,7 +90,7 @@ class TumbleCheck(State):
     def tumble_compare(self, hardware):
         # Implements the logic of the tumble check
         # Return True for tumbling too fast or False for not tumbling above the threshold
-        spin_rate = hardware.readIMU()[1]*(3.14/180.0)   # reads IMU measurement in deg/s and converts to rad/s
+        spin_rate = hardware.readIMU()[1]*(math.pi/180.0)   # reads IMU measurement in deg/s and converts to rad/s
 
         spin_magnitude = math.sqrt(spin_rate[0]**2 + spin_rate[1]**2 + spin_rate[2]**2)
         if spin_magnitude > TumbleCheck.tumble_threshold_value:
@@ -151,13 +151,28 @@ class Detumble(State):
     def calcMValue(self, hardware):
         imu_reading = hardware.readIMU()
 
-        om0 = imu_reading[1]*(3.14/180.0)
+        om0 = imu_reading[1]*(math.pi/180.0)
         B_body = imu_reading[2]*10**-4
 
-        B_dot = -np.cross(om0,B_body)               # Compute B_dot
-        m_value = -np.multiply(hardware.m_max,np.sign(B_dot))*np.linalg.norm(np.tanh(om0))
+#        B_dot = -np.cross(om0,B_body)               # Compute B_dot
+#        m_value1 = -np.multiply(hardware.m_max,np.sign(B_dot))*np.linalg.norm(np.tanh(om0))
+                
+        m_value=[]       
+        B_dot1 = (om0[1]*B_body[2]-om0[2]*B_body[1])               # Compute B_dot
+        B_dot2 = -(om0[0]*B_body[2]-om0[2]*B_body[1])               # Compute B_dot
+        B_dot3 = (om0[0]*B_body[1]-om0[1]*B_body[0])               # Compute B_dot
+        tanh1=math.tanh(om0[0])
+        tanh2=math.tanh(om0[1])
+        tanh3=math.tanh(om0[2])
+        tanh_om=math.sqrt(tanh1**2+tanh2**2+tanh3**2)
 
-        return m_value
+        m_value.append(hardware.m_max[0,0]*B_dot1/math.fabs(B_dot1)*tanh_om)
+        m_value.append(hardware.m_max[0,1]*B_dot2/math.fabs(B_dot2)*tanh_om)
+        m_value.append(hardware.m_max[0,2]*B_dot3/math.fabs(B_dot3)*tanh_om)
+
+#        print([m_value])
+#        print( (m_value1 == [m_value]))
+        return [m_value]
 
     
     def __str__(self):

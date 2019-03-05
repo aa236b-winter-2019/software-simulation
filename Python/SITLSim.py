@@ -124,8 +124,8 @@ class SoftwareSimHardware(Hardware):
         B_eci = igrffx(rv_eci[0:3],t0)*10**-9 
         
 
-        std_om = 8.75             # std dev in deg/s
-        std_b = 0.14              # std dev in guass
+        std_om = 8.75*10**-3             # std dev in deg/s
+        std_b = 0.14*10**-3              # std dev in guass
 
         om = omq[:3]*180.0/np.pi + np.random.normal(0,std_om) # converting to deg/s and adding noise
         B_eci = B_eci*10**4 +np.random.normal(0,std_b)             # converting to gauss and adding noise
@@ -383,7 +383,7 @@ def plotValues(time_hist, xyz_hist, w_hist, q_hist, torque_hist, power_hist):
 hardware = SoftwareSimHardware()
 #inputs = (None,None,None,None,None, None, None, None, None)
 ps = PandaSat(hardware)
-time_hist, xyz_hist, w_hist, q_hist, torque_hist, power_hist = runSimulationSteps(ps, 5000)
+time_hist, xyz_hist, w_hist, q_hist, torque_hist, power_hist = runSimulationSteps(ps, 2000)
 #print(w_hist)
 
 plotValues(time_hist, xyz_hist, w_hist, q_hist, torque_hist, power_hist)
