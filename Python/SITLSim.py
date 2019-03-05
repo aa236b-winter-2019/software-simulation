@@ -83,7 +83,7 @@ class SoftwareSimHardware(Hardware):
         resistance  = np.array([178.4,178.4,135])      # resistance of coils (ohm)
         I_max = np.divide(voltage_max,resistance)      # Maximum current (A)
         m_max = I_max*area_coil                        # Maximum magnetic moment (A.msq)
-        self.m_max = np.reshape(m_max,(1,3))
+        self.m_max = np.array([[.0096, .0096, .0096]])
         self.power_max = voltage_max*I_max                  # Max power consumed (W)
         self.m_value = [[0, 0, 0]] #maqnetorquer initially off
 
@@ -121,7 +121,7 @@ class SoftwareSimHardware(Hardware):
 
         # Calculate Earth's Magnetic Field in ECI
         t0 = julian.from_jd(self.time, fmt='mjd')            # Convert mjd into seconds
-        B_eci = igrffx(rv_eci[0:3],t0)*10**-9 
+        B_eci = igrffx(rv_eci[0:3],t0) 
         
 
         std_om = 8.75*10**-3             # std dev in deg/s
@@ -197,7 +197,7 @@ class SoftwareSimHardware(Hardware):
 
         # Initialize Known Variables and Initial Conditions
         rv_eci0 = np.append(r_eci, v_eci)   # Initial Orbit State Vector
-        om = 0.25*np.array([1,1,1])         # Initial Angular Velocity (rad/s)
+        om = 0.25*np.array([0,0,1])         # Initial Angular Velocity (rad/s)
         q = np.array([0,0,1,0])             # Initial Quaternion, Identity
         torque = np.array([0,0,0])          # Initial Torque
         power = np.array([0, 0])             # Initial Power consumption and generation
@@ -383,7 +383,7 @@ def plotValues(time_hist, xyz_hist, w_hist, q_hist, torque_hist, power_hist):
 hardware = SoftwareSimHardware()
 #inputs = (None,None,None,None,None, None, None, None, None)
 ps = PandaSat(hardware)
-time_hist, xyz_hist, w_hist, q_hist, torque_hist, power_hist = runSimulationSteps(ps, 500)
+time_hist, xyz_hist, w_hist, q_hist, torque_hist, power_hist = runSimulationSteps(ps, 200)
 #print(w_hist)
 
 plotValues(time_hist, xyz_hist, w_hist, q_hist, torque_hist, power_hist)
