@@ -53,12 +53,11 @@ B_eci = igrffx(r,t0)                                                          # 
 Sun2Earth = sunlocate(mjd)                                                      # Unit Vector from Sun to Earth in ECI
 
 # Initialize the Magnetorquer Properties
-area_coil = np.array([0.8784,0.8784,0.8784])                                    # Enclosed Coil Area in Each Axis (m^2)
-n_coil = np.array([1, 1, 1])                                                    # Number of Coil Turns in Each Axis
-voltage_max = 8.4                                                               # Max Battery Voltage (V)
-resistance  = np.array([178.4,178.4,135])                                       # Coil Resistance (Ohm)
+area_coil = np.array([0.294807214285714,0.294807214285714,0.294807214285714])   # Enclosed Coil Area in Each Axis (m^2)
+voltage_max = 8                                                                 # Max Battery Voltage (V)
+resistance  = np.array([245,245,245])                                           # Coil Resistance (Ohm)
 I_max = np.divide(voltage_max,resistance)                                       # Max Current (A)
-m_max = I_max*np.multiply(area_coil,n_coil)/2.5                                     # Max Magnetic Moment (A m^2)
+m_max = I_max*area_coil                                                         # Max Magnetic Moment (A m^2)
 power_max = voltage_max*I_max                                                   # Max Power Consumed (W)
 energy_consumed = 0                                                             # Initializing total energy consumption (J)
 
