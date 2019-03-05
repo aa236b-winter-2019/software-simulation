@@ -197,7 +197,7 @@ class SoftwareSimHardware(Hardware):
 
         # Initialize Known Variables and Initial Conditions
         rv_eci0 = np.append(r_eci, v_eci)   # Initial Orbit State Vector
-        om = 0.25*np.array([0,0,1])         # Initial Angular Velocity (rad/s)
+        om = 0.25*np.array([1,1,1])         # Initial Angular Velocity (rad/s)
         q = np.array([0,0,1,0])             # Initial Quaternion, Identity
         torque = np.array([0,0,0])          # Initial Torque
         power = np.array([0, 0])             # Initial Power consumption and generation
