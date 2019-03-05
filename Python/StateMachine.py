@@ -161,14 +161,16 @@ class Detumble(State):
         B_dot1 = (om0[1]*B_body[2]-om0[2]*B_body[1])               # Compute B_dot
         B_dot2 = -(om0[0]*B_body[2]-om0[2]*B_body[1])               # Compute B_dot
         B_dot3 = (om0[0]*B_body[1]-om0[1]*B_body[0])               # Compute B_dot
+
+
         tanh1=math.tanh(om0[0])
         tanh2=math.tanh(om0[1])
         tanh3=math.tanh(om0[2])
         tanh_om=math.sqrt(tanh1**2+tanh2**2+tanh3**2)
 
-        m_value.append(hardware.m_max[0,0]*B_dot1/math.fabs(B_dot1)*tanh_om)
-        m_value.append(hardware.m_max[0,1]*B_dot2/math.fabs(B_dot2)*tanh_om)
-        m_value.append(hardware.m_max[0,2]*B_dot3/math.fabs(B_dot3)*tanh_om)
+        m_value.append(math.copysign(hardware.m_max[0,0], B_dot1))
+        m_value.append(math.copysign(hardware.m_max[0,1], B_dot2))
+        m_value.append(math.copysign(hardware.m_max[0,2], B_dot3))
 
 #        print([m_value])
 #        print( (m_value1 == [m_value]))
