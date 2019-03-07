@@ -20,19 +20,20 @@ def dynamics(init_state, t, mu, J, J_inv, B_eci, m_max, m_value, power_max, Sun2
     from subroutines import q2rot
     from sunflux import sunflux
 #    import pdb
-
+    
     # Unpack Initial State
     rvec = init_state[:3]
     vvec = init_state[3:6]
     r = np.linalg.norm(rvec)
     om0 = init_state[6:9]
     q0 = init_state[9:13]
-    torque0 = init_state[13:16]
-    powercon0 = init_state[16:17]
-    powergen0 = init_state[17:18]
+    #torque0 = init_state[13:16]
+    #powercon0 = init_state[16:17]
+    #powergen0 = init_state[17:18]
 
     # Rotate B_eci into Satellite Body Frame
     B_body = np.dot(q2rot(q0),B_eci)
+
 
     # Compute Torque using B-dot Control Law for Next Epoch
     B_dot = -np.cross(om0,B_body)                                               # Compute B_dot
@@ -49,10 +50,10 @@ def dynamics(init_state, t, mu, J, J_inv, B_eci, m_max, m_value, power_max, Sun2
 
     om_dot = np.dot(J_inv, -np.cross(om0,np.dot(J,om0))+torque)
     q_dot = qkin(q0, om0)
-    torque_dot = torque - torque0
-    powercon_dot = powercon - powercon0
-    powergen_dot = powergen - powergen0
-    x_dot = np.concatenate((rv_dot, om_dot, q_dot, torque_dot, powercon_dot, powergen_dot))
+    #torque_dot = torque - torque0
+    #powercon_dot = powercon - powercon0
+    #powergen_dot = powergen - powergen0
+    x_dot = np.concatenate((rv_dot, om_dot, q_dot))
     return x_dot
 
 

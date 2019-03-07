@@ -190,20 +190,20 @@ class SoftwareSimHardware(Hardware):
         i = 28.47                # Inclination (deg)
         RAAN = 176.23            # Right Ascension of Ascending Node (deg)
         w = 82.61                # Argument of Perigee (deg)
-        anom = 319.41            # Mean Anomaly (deg)
+        anom = 100            # Mean Anomaly (deg)
         mu = 3.986e5             # Earth Standard Gravitational Parameter (km^3/s^2)
         T = 2*np.pi*np.sqrt((a**3)/mu) # Orbital Period (s)
         r_eci, v_eci = OE2ECI(a, e, i, RAAN, w, anom, mu)
 
         # Initialize Known Variables and Initial Conditions
         rv_eci0 = np.append(r_eci, v_eci)   # Initial Orbit State Vector
-        om = 0.25*np.array([1,1,1])         # Initial Angular Velocity (rad/s)
+        om = 0.25*np.array([1, 1, 1])         # Initial Angular Velocity (rad/s)
         q = np.array([0,0,1,0])             # Initial Quaternion, Identity
         torque = np.array([0,0,0])          # Initial Torque
         power = np.array([0, 0])             # Initial Power consumption and generation
-        omqtp0 = np.concatenate((om,q,torque)) # Initial Attitude State Vector  
+        omqtp0 = np.concatenate((om,q)) # Initial Attitude State Vector  
 
-        self.state = np.concatenate((rv_eci0, omqtp0, power))
+        self.state = np.concatenate((rv_eci0, omqtp0))
 
     def setPowerDraw(self):
         self.power_draw_dict = {'Hold state': 1.0, 
@@ -318,7 +318,7 @@ def plotValues(time_hist, xyz_hist, w_hist, q_hist, torque_hist, power_hist):
     ax.set_title('Detumbling Orbit Dynamics')
 
     # Plot Omega
-    f,(ax1,ax2,ax3)=plt.subplots(3,1,sharey=True)
+    f,(ax1,ax2,ax3)=plt.subplots(3,1, sharey=True)
     plt.rcParams['axes.grid'] = True
     ax1.plot(time_hist/60,w_hist[:,0])
     plt.ylabel('\omega_1')
@@ -351,6 +351,7 @@ def plotValues(time_hist, xyz_hist, w_hist, q_hist, torque_hist, power_hist):
     plt.ylabel('q_4')
     plt.xlabel('t(min)')
 
+    '''
     # Plot Torque
     #Tspan_torque = np.arange(0, T/n*epochs, T/n)
     f,(ax1,ax2,ax3)=plt.subplots(3,1,sharey=True)
@@ -374,6 +375,7 @@ def plotValues(time_hist, xyz_hist, w_hist, q_hist, torque_hist, power_hist):
     plt.xlabel('Time (min)')
     plt.ylabel('Power consumption (W)')
     plt.title('Power consumption ')
+    '''
     plt.show()
 
 #Simulation
@@ -383,7 +385,7 @@ def plotValues(time_hist, xyz_hist, w_hist, q_hist, torque_hist, power_hist):
 hardware = SoftwareSimHardware()
 #inputs = (None,None,None,None,None, None, None, None, None)
 ps = PandaSat(hardware)
-time_hist, xyz_hist, w_hist, q_hist, torque_hist, power_hist = runSimulationSteps(ps, 200)
+time_hist, xyz_hist, w_hist, q_hist, torque_hist, power_hist = runSimulationSteps(ps, 1500)
 #print(w_hist)
 
 plotValues(time_hist, xyz_hist, w_hist, q_hist, torque_hist, power_hist)
