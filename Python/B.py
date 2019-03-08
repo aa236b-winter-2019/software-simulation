@@ -14,6 +14,9 @@ from igrffx import igrffx
 from sunlocate import sunlocate
 from sunflux import sunflux
 import pdb
+import matplotlib as mpl
+
+
 plt.close('all')
 
 # Orbital Elements and Parameters
@@ -22,7 +25,7 @@ e = 0.000287                                                                    
 i = 28.47                                                                       # Inclination (deg)
 RAAN = 176.23                                                                   # Right Ascension of Ascending Node (deg)
 w = 82.61                                                                       # Argument of Perigee (deg)
-anom = 319.41                                                                   # Mean Anomaly (deg)
+anom = 100                                                                      # Mean Anomaly (deg)
 mu = 3.986e5                                                                    # Earth Standard Gravitational Parameter (km^3/s^2)
 T = 2*np.pi*np.sqrt((a**3)/mu)                                                  # Orbital Period (s)
 
@@ -35,21 +38,21 @@ J_inv = np.linalg.inv(J)                                                        
 
 # Convert Orbital ELements to Earth-Centered Inertial Frame Coordinates
 r, v = OE2ECI(a, e, i, RAAN, w, anom, mu)                                       # Initial Orbit State Vector
-om = 0.25*np.array([0.1,0.1,1])                                                     # Initial Angular Velocity (rad/s)
+om = 0.25*np.array([1,-1,-.5])                                                  # Initial Angular Velocity (rad/s)
 q = np.array([0,0,1,0])                                                         # Initial Quaternion, Identity
-torque = np.array([0,0,0])                                                      # Initial Torque
-powercon = np.array([0])                                                        # Initial Power Consumption
-powergen = np.array([0])                                                        # Initial Power Generation
-init_state = np.concatenate((r,v,om,q,torque,powercon,powergen))                # Initial Attitude State Vector
+#torque = np.array([0,0,0])                                                     # Initial Torque
+#powercon = np.array([0])                                                       # Initial Power Consumption
+#powergen = np.array([0])                                                       # Initial Power Generation
+init_state = np.concatenate((r,v,om,q))                                         # Initial Attitude State Vector
 tspan = [0]                                                                     # Start Time (sec)  
-n = 100                                                                         # Epochs per Orbital Period
-epochs = 100                                                                    # Total Number of Epochs
+n = 300                                                                         # Epochs per Orbital Period
+epochs = 5                                                                      # Total Number of Epochs
 m_value= np.zeros((1,3))                                                        # Initial magnetic moment
 
 # Calculate Earth's Magnetic Field and Sun's Location in ECI
 mjd = 54372.78                                                                  # Mean Julian Date of Initial Epoch
 t0 = julian.from_jd(mjd, fmt='mjd')                                             # Convert mjd into seconds
-B_eci = igrffx(r,t0)                                                          # Earth's Magnetic Field in ECI
+B_eci = igrffx(r,t0)                                                            # Earth's Magnetic Field in ECI
 Sun2Earth = sunlocate(mjd)                                                      # Unit Vector from Sun to Earth in ECI
 
 # Initialize the Magnetorquer Properties
@@ -61,118 +64,171 @@ m_max = I_max*area_coil                                                         
 power_max = voltage_max*I_max                                                   # Max Power Consumed (W)
 energy_consumed = 0                                                             # Initializing total energy consumption (J)
 
-# Initialize Zero Arrays for Time History  
-r_hist = np.zeros((1,3))                                                        # Time History of Position
-v_hist = np.zeros((1,3))                                                        # Time History of Velocity
-om_hist = np.zeros((1,3))                                                       # Time History of Angular Velocity 
-q_hist = np.zeros((1,4))                                                        # Time History of Quaternion
-torque_hist = np.zeros((1,3))                                                   # Time History of Torque
-Pcon_hist = []                                                                  # Time history of Power Consumption
-Pgen_hist = []                                                                  # Time history of Power Generation
-Tspan = []                                                                      # Time History 
+                                                          
 
-for i in range (1,epochs):
-    # Propogate State Vector with Applied Torque for 1 Epoch
-    tspan = np.arange(tspan[-1], T/n*i, 1)
-    args = (mu,J,J_inv,B_eci,m_max,power_max,Sun2Earth)
-    state = odeint(HSTdynamics2, init_state, tspan, args)
-    
-    # Store Time History for Plotting
-    r_hist = np.concatenate((r_hist,state[1:,0:3]),axis=0)
-    v_hist = np.concatenate((v_hist,state[1:,3:6]),axis=0)
-    om_hist = np.concatenate((om_hist,state[1:,6:9]),axis=0)
-    q_hist = np.concatenate((q_hist,state[1:,9:13]),axis=0)
-    torque_hist = np.concatenate((torque_hist,state[1:,13:16]),axis=0)
-    Pcon_hist = np.append(Pcon_hist,state[1:,16:17])
-    Pgen_hist = np.append(Pgen_hist,state[1:,17:])
-    Tspan = np.concatenate((Tspan,tspan[1:]),axis=0)
-    
-    # Update the Inital Conditions for Next Epoch
-    init_state = np.concatenate((r_hist[-1,:],v_hist[-1,:],om_hist[-1,:],
-                             q_hist[-1,:],torque_hist[-1,:],((Pcon_hist[-1], Pgen_hist[-1]))))
 
-    # Calculate Earth's Magnetic Field in ECI
-    j = tspan.shape[0]-1                                                        # Final Index of tspan
-    dt = julian.from_jd(mjd, fmt='mjd')                                         # Convert mjd into seconds
-    newtime = dt + datetime.timedelta(seconds=tspan[j])                         # Add time from Epoch 
-    mjd_prop = 54372.78 + (tspan[j])/(60*60*24)                                 # newtime in mjd
-    B_eci = igrffx(init_state[0:3],newtime)                                     # New B_eci for Next Time Step 
-    Sun2Earth=sunlocate(mjd_prop)                                               # New Sun2Earth for Next Time Step
+
+max_time = 5000
+
+state = np.zeros((max_time,13))
+torque_hist = np.zeros((max_time-1,3))
+B_hist = np.zeros((max_time-1,3))
+sun_fluxes = np.zeros((max_time-1,1))
+state[0,:] = init_state
+
+
+for i in range (0,max_time-1):
+
+
+    #Get time for B value
+    dt = julian.from_jd(mjd, fmt='mjd')                                         
+    newtime = dt + datetime.timedelta(seconds=int(i))
+
+    #Calculate B_eci
+    B_eci = B_eci = igrffx(state[i,0:3],newtime) 
+    
+    #calculate b dot math before ODEint
+    B_body = np.dot(q2rot(state[i,9:13]),B_eci)
+    B_dot = -np.cross(state[i,6:9],B_body)                                           
+    m_value = -np.multiply(m_max,np.sign(B_dot))
+    torque = np.cross(m_value,B_body)
+    
+    #check if we need to turn off the controller
+    if np.linalg.norm(state[i,6:9]) < np.deg2rad(3):                                           
+        m_max = np.array([0,0,0])
+        
+    #index the torques and B values
+    torque_hist[i,:] = torque
+    B_hist[i,:] = B_eci
+    
+    #Propogate State Vector with Applied Torque for 1 second
+    tspan = np.arange(i, i+2, 1)
+    args = (mu,J,J_inv,B_eci,m_max,power_max,Sun2Earth,torque)
+    state2, test_dict = odeint(HSTdynamics2, state[i,:], tspan, args, full_output=True, rtol = 1e-9,atol = 1e-9)
+    
+    #Grab the most recent state
+    state[i+1,:] = state2[-1,:]
     
 
-# Plot Orbit 
-plt.figure()
-ax=plt.axes(projection='3d')
-ax.plot3D(r_hist[1:,0],r_hist[1:,1],r_hist[1:,2],'r')
-ax.axis('equal')
-plt.xlabel('[km]')
-plt.ylabel('[km]')
-ax.set_title('Detumbling Orbit Dynamics')
+    #calculate time for sunlocate
+    mjd_prop = 54372.78 + (i/(60*60*24))                                                             
+    Sun2Earth=sunlocate(mjd_prop)    
+
+    #sun flux
+    sun_fluxes[i,:] = sunflux(state[i+1,0:3], Sun2Earth, state[i+1,9:13])
+
+        
+        
+#graphing time vectors
+graph_T = np.linspace(1,max_time, num = max_time)/60
+graph_hist = graph_T[:-1]
+
+
+# second try orbit plot
+fig = plt.figure()
+ax1 = fig.add_subplot(111, projection='3d')
+
+# Make data
+u = np.linspace(0, 2 * np.pi, 100)
+v = np.linspace(0, np.pi, 100)
+x = 6378.1 * np.outer(np.cos(u), np.sin(v))
+y = 6378.1 * np.outer(np.sin(u), np.sin(v))
+z = 6378.1 * np.outer(np.ones(np.size(u)), np.cos(v))
+
+# Plot the surface
+ax1.plot_surface(x, y, z, color='b')
+
+
+mpl.rcParams['legend.fontsize'] = 10
+
+
+ax2 = fig.gca(projection='3d')
+theta = np.linspace(-4 * np.pi, 4 * np.pi, 100)
+z = np.linspace(-2, 2, 100)
+r = z**2 + 1
+x = r * np.sin(theta)
+y = r * np.cos(theta)
+ax2.plot(state[1:,0],state[1:,1],state[1:,2],'r', label='Panda Sat')
+ax2.legend()
+
 plt.show()
 
-# Plot Quaternion
+
+
+#Plot Quaternion
 f,(ax1,ax2,ax3,ax4)=plt.subplots(4,1,sharey=True)
 plt.rcParams['axes.grid'] = True
-ax1.plot(Tspan/60,q_hist[1:,0])
-plt.ylabel('q_1')
-plt.xlabel('t(min)')
+ax1.plot(graph_T,state[:,9])
 ax1.set_title('Quaternion Dynamics')
-ax2.plot(Tspan/60,q_hist[1:,1])
-plt.ylabel('q_2')
-plt.xlabel('t(sec)')
-ax3.plot(Tspan/60,q_hist[1:,2])
-plt.ylabel('q_3')
-plt.xlabel('t(min)')
-ax4.plot(Tspan/60,q_hist[1:,3])
-plt.ylabel('q_4')
-plt.xlabel('t(min)')
+ax1.set(ylabel='Q1')
+ax2.plot(graph_T,state[:,10])
+ax2.set(ylabel='Q2')
+ax3.plot(graph_T,state[:,11])
+ax3.set(ylabel='Q3')
+ax4.plot(graph_T,state[:,12])
+ax4.set(xlabel='Time (Minutes)', ylabel='Q4')
 plt.show()
 
-# Plot Omega
+
+
+#Plot Omega
 f,(ax1,ax2,ax3)=plt.subplots(3,1,sharey=True)
 plt.rcParams['axes.grid'] = True
-ax1.plot(Tspan/60,om_hist[1:,0])
-plt.ylabel('\omega_1')
-plt.xlabel('t(min)')
-ax1.set_title('Angular Velocity with Bdot controller')
-ax2.plot(Tspan/60,om_hist[1:,1])
-plt.ylabel('\omega_2')
-plt.xlabel('t(min)')
-ax3.plot(Tspan/60,om_hist[1:,2])
-plt.ylabel('\omega_3')
-plt.xlabel('t(min)')
+ax1.plot(graph_T,abs(np.rad2deg(state[:,6])))
+ax1.set_title('Angular Velocity')
+ax1.set(ylabel='wx (deg/s)')
+ax2.plot(graph_T,abs(np.rad2deg(state[:,7])))
+ax2.set(ylabel='wy (deg/s)')
+ax3.plot(graph_T,abs(np.rad2deg(state[:,8])))
+ax3.set(xlabel='Time (Minutes)', ylabel='wz (deg/s)')
 plt.show()
 
-# Plot Torque
-Tspan_torque = np.arange(0, T/n*epochs, T/n)
+#Plot Torque
 f,(ax1,ax2,ax3)=plt.subplots(3,1,sharey=True)
 plt.rcParams['axes.grid'] = True
-ax1.plot(Tspan/60,torque_hist[1:,0])
-plt.ylabel('Tx()')
-plt.xlabel('t(min)')
+ax1.plot(graph_hist,torque_hist[:,0])
 ax1.set_title('Torque')
-ax2.plot(Tspan/60,torque_hist[1:,1])
-plt.ylabel('Ty()')
-plt.xlabel('t(min)')
-ax3.plot(Tspan/60,torque_hist[1:,2])
-plt.ylabel('Tz()')
-plt.xlabel('t(min)')
+ax1.set(ylabel='Tx (N*m)')
+ax2.plot(graph_hist,torque_hist[:,1])
+ax2.set(ylabel='Ty (N*m)')
+ax3.plot(graph_hist,torque_hist[:,2])
+ax3.set(xlabel='Time (Minutes)', ylabel='Tz (N*m)')
 plt.show()
+
+#plot B
+lines = plt.plot(graph_hist, B_hist[:,0], graph_hist, B_hist[:,1], graph_hist, B_hist[:,2])
+plt.legend(('Bx', 'By', 'Bz'),
+           loc='upper right')
+plt.title('Magnetic Field')
+plt.xlabel("Time (Minutes)")
+plt.ylabel("Magnetic Field (Teslas)")
+plt.show()
+
+#plot sunflux
+lines = plt.plot(graph_hist, sun_fluxes[:,0])
+
+plt.title('Sun Flux')
+plt.xlabel("Time (Minutes)")
+plt.ylabel("Sun Flux (Watts)")
+plt.show()
+
+
+
 
 # Plot Power and Compute Energy Consumption
-energy_consumed = np.trapz(Pcon_hist, Tspan)
-print('Energy Consumed = ', energy_consumed)
-plt.figure()
-plt.plot(Tspan/60,Pcon_hist,'r')
-plt.xlabel('Time (min)')
-plt.ylabel('Power Consumed (W)')
-plt.title('Power Consumption ')
-plt.show()
-
-# Plot Power Generation
-plt.figure()
-plt.plot(Tspan/60,Pgen_hist,'r')
-plt.xlabel('Time (min)')
-plt.ylabel('Power Generated (W)')
-plt.title('Power Generation')
-plt.show()
+#energy_consumed = np.trapz(Pcon_hist, Tspan)
+#print('Energy Consumed = ', energy_consumed)
+#plt.figure()
+#plt.plot(Tspan/60,Pcon_hist,'r')
+#plt.xlabel('Time (min)')
+#plt.ylabel('Power Consumed (W)')
+#plt.title('Power Consumption ')
+#plt.show()
+#
+## Plot Power Generation
+#plt.figure()
+#plt.plot(Tspan/60,Pgen_hist,'r')
+#plt.xlabel('Time (min)')
+#plt.ylabel('Power Generated (W)')
+#plt.title('Power Generation')
+#plt.show()
