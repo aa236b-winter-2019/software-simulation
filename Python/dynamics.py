@@ -1,4 +1,4 @@
-def dynamics(init_state, t, mu, J, J_inv, B_eci, m_max, m_value, power_max, Sun2Earth, baseline_power):
+def dynamics(init_state, t, mu, J, J_inv, B_eci, m_max, m_value, power_max, Sun2Earth, baseline_power, power_gen_on):
 # HSTdynamics: Contains full ODE dynamics for all spacecraft states.
 #
 # Assumptions:
@@ -42,7 +42,7 @@ def dynamics(init_state, t, mu, J, J_inv, B_eci, m_max, m_value, power_max, Sun2
     #torque = torque*(np.linalg.norm(om0)>1*np.pi/180)                          # Turn off Torque within Omega Limits 
     
     powercon = np.sum(np.dot(np.square(m_value/m_max),power_max))      
-    powergen = sunflux(np.transpose(rvec), Sun2Earth, np.transpose(q0))
+    powergen = sunflux(np.transpose(rvec), Sun2Earth, np.transpose(q0)) * power_gen_on
  
     # matrix linear equation
     rv_dot = np.dot(np.block([[np.zeros((3,3)),      np.eye(3)],
@@ -53,7 +53,8 @@ def dynamics(init_state, t, mu, J, J_inv, B_eci, m_max, m_value, power_max, Sun2
     #torque_dot = torque - torque0
     #powercon_dot = powercon - powercon0
     #powergen_dot = powergen - powergen0
-    x_dot = np.concatenate((rv_dot, om_dot, q_dot))
+    battery_dot = np.array([powergen - powercon - baseline_power])
+    x_dot = np.concatenate((rv_dot, om_dot, q_dot, battery_dot))
     return x_dot
 
 

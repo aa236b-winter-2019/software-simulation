@@ -22,6 +22,12 @@ class Hardware:
     def checkBatteryPercent(self):
         assert 0, 'checkBatteryPercent not implemented'
 
+    def turnChargingOff(self):
+        assert 0, 'turnChargingOff not implemented'
+
+    def turnChargingOn(self):
+        assert 0, 'turnChargingOn not implemented'
+
 
 
 class SoftwareSimHardware(Hardware):
@@ -86,6 +92,7 @@ class SoftwareSimHardware(Hardware):
         self.m_max = np.array([[.0096, .0096, .0096]])
         self.power_max = voltage_max*I_max                  # Max power consumed (W)
         self.m_value = [[0, 0, 0]] #maqnetorquer initially off
+        self.power_gen_on = False
 
         self.initializeState()
         self.setPowerDraw()
@@ -117,7 +124,7 @@ class SoftwareSimHardware(Hardware):
         """
 
         rv_eci = self.state[0:6]                      # Initial Orbit State Vector
-        omq = self.state[6:]                          # Initial Angular Velocity (rad/s) and Quaternion 
+        omq = self.state[6:13]                          # Initial Angular Velocity (rad/s) and Quaternion 
 
         # Calculate Earth's Magnetic Field in ECI
         t0 = julian.from_jd(self.time, fmt='mjd')            # Convert mjd into seconds
@@ -158,7 +165,7 @@ class SoftwareSimHardware(Hardware):
         """
 
         #placeholder value
-        return 50
+        return (self.state[13]/self.max_battery_capacity)*100
 
     def runMagnetorquer(self, m_value):
         """Sets the magnetorquer moment value
@@ -183,6 +190,12 @@ class SoftwareSimHardware(Hardware):
 
         #THIS SHOULD SET A VALUE IN THE SIMULATION PROPAGATE OR SOMETHING
 
+    def turnChargingOff(self):
+        self.power_gen_on = False
+
+    def turnChargingOn(self):
+        self.power_gen_on = True
+
     def initializeState(self):
         # Orbital Elements and Parameters
         a = 6917.50              # Orbit Semi-Major Axis (km)
@@ -201,9 +214,10 @@ class SoftwareSimHardware(Hardware):
         q = np.array([0,0,1,0])             # Initial Quaternion, Identity
         torque = np.array([0,0,0])          # Initial Torque
         power = np.array([0, 0])             # Initial Power consumption and generation
-        omqtp0 = np.concatenate((om,q)) # Initial Attitude State Vector  
+        omqt = np.concatenate((om,q)) # Initial Attitude State Vector
+        battery = np.array([.1 * self.max_battery_capacity])
 
-        self.state = np.concatenate((rv_eci0, omqtp0))
+        self.state = np.concatenate((rv_eci0, omqt, battery))
 
     def setPowerDraw(self):
         self.power_draw_dict = {'Hold state': 1.0, 
@@ -277,13 +291,14 @@ def runSimulationTime(state_machine, max_time):
     return (time_hist, xyz_hist, w_hist, q_hist, torque_hist, power_hist)
 
 def runSimulationSteps(state_machine, num_steps):
-    # Assumptions
+    # Assumptionsa
     # time starts at zero
     xyz_hist = np.zeros((num_steps, 3))
     w_hist = np.zeros((num_steps, 3))
     q_hist = np.zeros((num_steps, 4))
     torque_hist = np.zeros((num_steps, 3))
     power_hist = np.zeros((num_steps, 2))
+    battery_hist = np.zeros((num_steps,1))
     time_hist = np.zeros(num_steps)
 
 
@@ -297,16 +312,17 @@ def runSimulationSteps(state_machine, num_steps):
         xyz_hist[i, :] = state_machine.hardware.state[0:3]
         w_hist[i,:] = state_machine.hardware.state[6:9]
         q_hist[i,:] = state_machine.hardware.state[9:13]
-        torque_hist[i,:] = state_machine.hardware.state[13:16]
-        power_hist[i,:] = state_machine.hardware.state[16:18]
+        battery_hist[i,:] = state_machine.hardware.state[13:14]
+        torque_hist[i,:] = state_machine.hardware.state[14:17]
+        power_hist[i,:] = state_machine.hardware.state[17:19]
         time_hist[i] = time
         #print('current time: %.1f min' %(time/60))
 
-    return (time_hist, xyz_hist, w_hist, q_hist, torque_hist, power_hist)
+    return (time_hist, xyz_hist, w_hist, q_hist, battery_hist, torque_hist, power_hist)
 
 
 
-def plotValues(time_hist, xyz_hist, w_hist, q_hist, torque_hist, power_hist):
+def plotValues(time_hist, xyz_hist, w_hist, q_hist, battery_hist, torque_hist, power_hist):
 
     # Plot Orbit 
     plt.figure()
@@ -366,16 +382,16 @@ def plotValues(time_hist, xyz_hist, w_hist, q_hist, torque_hist, power_hist):
     ax3.plot(time_hist/60,torque_hist[:,2])
     plt.ylabel('Tz()')
     plt.xlabel('t(min)')
+    '''
 
     # Plot Power and Compute Energy Consumption
-    energy_consumed = np.trapz(power_hist[:,0],time_hist)
-    print('Total energy consumed ' + str(energy_consumed))
+    #energy_consumed = np.trapz(power_hist[:,0],time_hist)
+    #print('Battery total energy ' + str(energy_consumed))
     plt.figure()
-    plt.plot(time_hist/60, power_hist[:,0],'r')
+    plt.plot(time_hist/60, battery_hist[:,0],'r')
     plt.xlabel('Time (min)')
-    plt.ylabel('Power consumption (W)')
+    plt.ylabel('Battery total energy (J)')
     plt.title('Power consumption ')
-    '''
     plt.show()
 
 #Simulation
@@ -385,10 +401,10 @@ def plotValues(time_hist, xyz_hist, w_hist, q_hist, torque_hist, power_hist):
 hardware = SoftwareSimHardware()
 #inputs = (None,None,None,None,None, None, None, None, None)
 ps = PandaSat(hardware)
-time_hist, xyz_hist, w_hist, q_hist, torque_hist, power_hist = runSimulationSteps(ps, 1500)
+time_hist, xyz_hist, w_hist, q_hist, battery_hist, torque_hist, power_hist = runSimulationSteps(ps, 150)
 #print(w_hist)
 
-plotValues(time_hist, xyz_hist, w_hist, q_hist, torque_hist, power_hist)
+plotValues(time_hist, xyz_hist, w_hist, q_hist, battery_hist, torque_hist, power_hist)
 
 #ps.runAll(inputs)
 #orbit_sim.requestUplink()

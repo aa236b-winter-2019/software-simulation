@@ -48,14 +48,15 @@ def propagate(hardware, deltaT, current_state):
     #rv_eci = odeint(dynamics, rv_eci0, tspan, args=(mu,J,J_inv,0,0,0, 0))
     #print('mvalue: ' + str(m_value))	
     #omq = odeint(dynamics, omq0, tspan, args=(mu,J,J_inv,B_eci,m_max, m_value, power_max)) # This propagates with torque coils ON (add flag later?)
-
-    state = odeint(dynamics, init_state[0:13], tspan, args=(mu,J,J_inv,B_eci,m_max, m_value, power_max, Sun2Earth, baseline_power))
+    power_gen_on = hardware.power_gen_on
+    state = odeint(dynamics, init_state[0:14], tspan, args=(mu,J,J_inv,B_eci,m_max, m_value, power_max, Sun2Earth, baseline_power, power_gen_on))
     
     # Update New Initial Conditions and Store Propagated State
     r = state[-1,0:3]
     v = state[-1,3:6]
     om = state[-1,6:9]
     q = state[-1,9:13]
+    bat = state[-1,13:14]
     #torque = state[-1, 13:16]
     #power = state[-1, 16:18]
 
@@ -63,8 +64,8 @@ def propagate(hardware, deltaT, current_state):
     torque = np.cross(m_value,B_body)[0]
     
     powercon = np.sum(np.dot(np.square(m_value/m_max),power_max)) + baseline_power      
-    powergen = sunflux(np.transpose(r), Sun2Earth, np.transpose(q))
+    powergen = sunflux(np.transpose(r), Sun2Earth, np.transpose(q)) * power_gen_on
     
     power = [powercon, powergen]
         
-    return np.concatenate((r, v, om, q, torque, power))
+    return np.concatenate((r, v, om, q, bat, torque, power))

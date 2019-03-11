@@ -10,7 +10,7 @@ import math
 #import numpy as np
 
 class State:
-    verbose_flag = False
+    verbose_flag = True
     def run(self):
         assert 0, "run not implemented"
     def next(self, input):
@@ -31,6 +31,21 @@ class StateMachine:
             
             
     def runStep(self, inputs):
+
+        battery_percentage = self.hardware.checkBatteryPercent()
+        power_gen_threshold_min = 50
+        power_gen_threshold_max = 99
+
+        if battery_percentage < power_gen_threshold_min:
+            self.hardware.turnChargingOn()
+            if self.currentState.verbose_flag:
+                print('generating power')
+
+        elif battery_percentage > power_gen_threshold_max:
+            self.hardware.turnChargingOff()
+            if self.currentState.verbose_flag:
+                print('not generating power')
+
         delta_t = self.currentState.run(self.hardware)
         next_state = self.currentState.next(self.hardware)
         self.currentState = next_state
