@@ -8,12 +8,18 @@ def hypertan(q):
     return tanh
     
 
-def encodestring(M,P,A,Time):
+def encodestring(inputlist,decimal_places):
     #inputs
-    # M,P,A - 3 unit arrays, float or int
+    # Input list of [Array1, Array2, Array3, Time value]
     # Time - scalar, float or int
-    #All values will be clipped to 5 decimal places
+    #All values will be clipped to specified decimal places
     
+    #unpack inputlist
+    M = inputlist[0]
+    P = inputlist[1]
+    A = inputlist[2]
+    Time = inputlist[3]
+
     #sanitize the inputs (turn all into float)
     for i in range(len(M)):
         A[i] = float(A[i])
@@ -21,9 +27,14 @@ def encodestring(M,P,A,Time):
         P[i] = float(P[i])
 
     Time = float(Time)
+    
     #start the output string
     outputstring=''
     
+    #decimal place string 
+    decstring = '{:.' + str(decimal_places) + 'f}'
+    
+  
     #get length of everything
     len1 = len(M)
     len2 = len(P)
@@ -33,10 +44,10 @@ def encodestring(M,P,A,Time):
     for i in range(len1):
      
         if i != len1-1:   
-            outputstring += "{:.5f}".format(M[i]) + ':'
+            outputstring += decstring.format(M[i]) + ':'
           
         else:
-            outputstring += "{:.5f}".format(M[i])
+            outputstring += decstring.format(M[i])
            
     
     #delimit between vectors with a semi colon
@@ -45,23 +56,23 @@ def encodestring(M,P,A,Time):
     for i in range(len2):
      
         if i != len2-1:   
-            outputstring += "{:.5f}".format(P[i]) + ':'
+            outputstring += decstring.format(P[i]) + ':'
           
         else:
-            outputstring += "{:.5f}".format(P[i])
+            outputstring += decstring.format(P[i])
            
     outputstring += ';'
     
     for i in range(len3):
      
         if i != len3-1:   
-            outputstring += "{:.5f}".format(A[i]) + ':'
+            outputstring += decstring.format(A[i]) + ':'
           
         else:
-            outputstring += "{:.5f}".format(A[i])
+            outputstring += decstring.format(A[i])
     
     #add time 
-    outputstring+=';' + "{:.5f}".format(Time)
+    outputstring+=';' + decstring.format(Time)
     
     #string is ready for printing
     return outputstring
