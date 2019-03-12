@@ -25,20 +25,26 @@ while count < 10:
 
 ser.close()
 '''
+
+#ls /dev/tty.* how to check a mac's serial ports
 import serial
 import time
+from CPsubroutines import *
 
 ser = serial.Serial('/dev/cu.usbserial-1440', 9600, timeout = 1) # ttyACM1 for Arduino board
 
 readOut = 0   #chars waiting from laser range finder
 
+fakeIMU = ([0, 0, 0], [1.45, 1.45, 1.45], [3.45, 3.45, 3.45])
+
 print ("Starting up")
 connected = False
-commandToSend = 'help' # get the distance in mm
+commandToSend = encodestring([1, 1, 1], [2, 2, 2], [3, 3, 3], 2) # get the distance in mm
 count = 0
-while count < 5:
+while count < 1:
     print ("Writing: ",  commandToSend)
     ser.write(str(commandToSend).encode('utf-8'))
+    #ser.write(commandToSend.encode('utf-8'))
     time.sleep(2)
     while True:
         try:
@@ -47,7 +53,7 @@ while count < 5:
 
             #data_string = ''.join([chr(b) for b in readOut])
             readOut = ''.join([chr(b) for b in raw])
-            time.sleep(1)
+            time.sleep(2)
             #print('Raw output: ')
             print ("Reading: ", raw.decode())
             break
@@ -56,4 +62,10 @@ while count < 5:
     print ("Restart\n")
     ser.flush() #flush the buffer
     count += 1
+
+test = encodestring([1, 1, 1], [2, 2, 2], [3, 3, 3], 2)
+
+test2 = decodestring(test)
+
+#print(test2)
 
