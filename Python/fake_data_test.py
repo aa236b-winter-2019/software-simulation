@@ -39,10 +39,11 @@ fakeIMU = ([0, 0, 0], [1.45, 1.45, 1.45], [3.45, 3.45, 3.45])
 
 print ("Starting up")
 connected = False
-commandToSend = encodestring([1, 1, 1], [2, 2, 2], [3, 3, 3], 2) # get the distance in mm
+commandToSend = encodestring(([1.2, 1.2, 1.2], [2.1, 2.1, 2.1], [3.4, 3.4, 3.4], 2), 2) # get the distance in mm
 count = 0
 while count < 1:
     print ("Writing: ",  commandToSend)
+    #ser.write('IMU Data\n'.encode('utf-8'))
     ser.write(str(commandToSend).encode('utf-8'))
     #ser.write(commandToSend.encode('utf-8'))
     time.sleep(2)
@@ -63,9 +64,9 @@ while count < 1:
     ser.flush() #flush the buffer
     count += 1
 
-test = encodestring([1, 1, 1], [2, 2, 2], [3, 3, 3], 2)
+test = encodestring(([1, 1, 1], [2, 2, 2], [3, 3, 3], 2), 6)
 
 test2 = decodestring(test)
 
-#print(test2)
+print(test)
 
