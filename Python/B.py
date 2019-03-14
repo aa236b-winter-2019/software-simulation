@@ -61,8 +61,10 @@ m_max = I_max*area_coil                                                         
 power_max = voltage_max*I_max                                                   # Max Power Consumed (W)
 energy_consumed = 0                                                             # Initializing total energy consumption (J)
 
-# Initialize all lists                                                         
+# Time for simulation                                                        
 max_time = 50																	# Number of seconds for simulation 
+
+# Initialize all lists 
 state = np.zeros((max_time,13))													# State vector holds everything
 torque_hist = np.zeros((max_time-1,3))											# Torque history
 B_hist = np.zeros((max_time-1,3))												# B history
