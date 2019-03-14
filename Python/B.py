@@ -8,7 +8,7 @@ import julian
 import datetime
 from subroutines import *
 from HSTdynamics import HSTdynamics
-from HSTdynamics2 import HSTdynamics2
+from spacecraftdynamics import spacecraftdynamics
 from propagate import propagate
 from igrffx import igrffx
 from sunlocate import sunlocate
@@ -99,7 +99,7 @@ for i in range (0,max_time-1):
     #Propogate State Vector with Applied Torque for 1 second
     tspan = np.arange(i, i+2, 1)
     args = (mu,J,J_inv,B_eci,m_max,power_max,Sun2Earth,torque)
-    state2, test_dict = odeint(HSTdynamics2, state[i,:], tspan, args, full_output=True, rtol = 1e-9,atol = 1e-9)
+    state2, test_dict = odeint(spacecraftdynamics, state[i,:], tspan, args, full_output=True, rtol = 1e-9,atol = 1e-9)
     
     #Grab the most recent state to the state matrix
     state[i+1,:] = state2[-1,:]
