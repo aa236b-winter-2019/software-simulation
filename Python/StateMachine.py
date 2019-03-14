@@ -10,7 +10,7 @@ import math
 #import numpy as np
 
 class State:
-    verbose_flag = False
+    verbose_flag = True
     def run(self):
         assert 0, "run not implemented"
     def next(self, input):

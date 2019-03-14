@@ -1,3 +1,6 @@
+import serial
+import time
+
 def hypertan(q):
     #input q - angle in radians
     
@@ -108,3 +111,22 @@ def decodestring(outputstring):
     xportvec = [vec1,vec2,vec3, float(output4),float(output5)]
     
     return xportvec
+
+def writeToSerial(inputlist, decimal_places):
+    WRITECOUNT = 1
+    VERBOSE = True
+    ser = serial.Serial('/dev/cu.usbserial-1440', 9600, timeout = 1) # ttyACM1 for Feather board, CHANGE WITH EACH COMPUTER
+    command_to_write = encodestring(inputlist, decimal_places)
+
+    count = 0
+    while count < WRITECOUNT:
+        if VERBOSE:
+            print ("Writing: ",  command_to_write)
+        ser.write(str(command_to_write).encode('utf-8'))
+        time.sleep(4)
+        ser.flush() #flush the buffer
+        count += 1
+
+    ser.close()
+
+

@@ -7,6 +7,7 @@ from propagate import propagate
 from subroutines import *
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+from CPsubroutines import *
 
 # TODO
 # Put actual numbers in for the power dictionary
@@ -134,6 +135,8 @@ class SoftwareSimHardware(Hardware):
 
         # Rotate B_eci into Satellite Body Frame
         B_body = np.dot(q2rot(q),B_eci)   
+
+        writeToSerial([[0,0,0], om, B_body, 0, 0], 5)
 
         return ([0, 0, 0], om, B_body)
 
@@ -385,7 +388,7 @@ def plotValues(time_hist, xyz_hist, w_hist, q_hist, torque_hist, power_hist):
 hardware = SoftwareSimHardware()
 #inputs = (None,None,None,None,None, None, None, None, None)
 ps = PandaSat(hardware)
-time_hist, xyz_hist, w_hist, q_hist, torque_hist, power_hist = runSimulationSteps(ps, 1500)
+time_hist, xyz_hist, w_hist, q_hist, torque_hist, power_hist = runSimulationSteps(ps, 5)
 #print(w_hist)
 
 plotValues(time_hist, xyz_hist, w_hist, q_hist, torque_hist, power_hist)

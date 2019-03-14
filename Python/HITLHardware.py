@@ -159,27 +159,6 @@ class HITLHardware(Hardware):
 
         #THIS SHOULD SET A VALUE IN THE SIMULATION PROPAGATE OR SOMETHING
 
-    def initializeState(self):
-        # Orbital Elements and Parameters
-        a = 6917.50              # Orbit Semi-Major Axis (km)
-        e = 0.000287             # Eccentricity
-        i = 28.47                # Inclination (deg)
-        RAAN = 176.23            # Right Ascension of Ascending Node (deg)
-        w = 82.61                # Argument of Perigee (deg)
-        anom = 100            # Mean Anomaly (deg)
-        mu = 3.986e5             # Earth Standard Gravitational Parameter (km^3/s^2)
-        T = 2*np.pi*np.sqrt((a**3)/mu) # Orbital Period (s)
-        r_eci, v_eci = OE2ECI(a, e, i, RAAN, w, anom, mu)
-
-        # Initialize Known Variables and Initial Conditions
-        rv_eci0 = np.append(r_eci, v_eci)   # Initial Orbit State Vector
-        om = 0.25*np.array([1, 1, 1])         # Initial Angular Velocity (rad/s)
-        q = np.array([0,0,1,0])             # Initial Quaternion, Identity
-        torque = np.array([0,0,0])          # Initial Torque
-        power = np.array([0, 0])             # Initial Power consumption and generation
-        omqtp0 = np.concatenate((om,q)) # Initial Attitude State Vector  
-
-        self.state = np.concatenate((rv_eci0, omqtp0))
 
     def setPowerDraw(self):
         self.power_draw_dict = {'Hold state': 1.0, 
