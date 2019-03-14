@@ -16,7 +16,6 @@ from sunflux import sunflux
 import pdb
 import matplotlib as mpl
 
-
 plt.close('all')
 
 # Orbital Elements and Parameters
@@ -30,9 +29,10 @@ mu = 3.986e5                                                                    
 T = 2*np.pi*np.sqrt((a**3)/mu)                                                  # Orbital Period (s)
 
 # Define Principle Axes of Inertia
-J11 = .01/6                                                                     # (kg m^2)
-J22 = .01/6                                                                     # (kg m^2)
-J33 = .01/6                                                                     # (kg m^2)
+mass = 1
+J11 = mass*.01/6                                                                     # (kg m^2)
+J22 = mass*.01/6                                                                     # (kg m^2)
+J33 = mass*.01/6                                                                     # (kg m^2)
 J = np.diag(np.array([J11,J22,J33]))                                            # Diagonalize Principle Axes
 J_inv = np.linalg.inv(J)                                                        # Invert J Matrix for Ease of Computation
 
