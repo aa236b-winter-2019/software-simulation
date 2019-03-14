@@ -192,7 +192,6 @@ plt.show()
 
 #plot sunflux
 lines = plt.plot(graph_hist, sun_fluxes[:,0])
-
 plt.title('Sun Flux')
 plt.xlabel("Time (Minutes)")
 plt.ylabel("Sun Flux (Watts)")
