@@ -19,7 +19,7 @@ def encodestring(inputlist,decimal_places):
     P = inputlist[1]
     A = inputlist[2]
     Time = inputlist[3]
-
+    Batt = inputlist[4]
     #sanitize the inputs (turn all into float)
     for i in range(len(M)):
         A[i] = float(A[i])
@@ -27,7 +27,7 @@ def encodestring(inputlist,decimal_places):
         P[i] = float(P[i])
 
     Time = float(Time)
-    
+    Batt = float(Batt)
     #start the output string
     outputstring=''
     
@@ -72,7 +72,7 @@ def encodestring(inputlist,decimal_places):
             outputstring += decstring.format(A[i])
     
     #add time 
-    outputstring+=';' + decstring.format(Time)
+    outputstring+=';' + decstring.format(Time) + ';' + decstring.format(Batt)
     
     #string is ready for printing
     return outputstring
@@ -89,6 +89,7 @@ def decodestring(outputstring):
     output2 = outputvectors[1].split(':')
     output3 = outputvectors[2].split(':')
     output4 = outputvectors[3]
+    output5 = outputvectors[4]
     
     #convert to float and place in export vector   
     vec1 = [0,0,0]
@@ -104,6 +105,6 @@ def decodestring(outputstring):
         vec3[k] = float(output3[k])
         
         
-    xportvec = [vec1,vec2,vec3, float(output4)]
+    xportvec = [vec1,vec2,vec3, float(output4),float(output5)]
     
     return xportvec
