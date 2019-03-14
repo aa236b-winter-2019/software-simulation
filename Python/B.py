@@ -61,19 +61,15 @@ m_max = I_max*area_coil                                                         
 power_max = voltage_max*I_max                                                   # Max Power Consumed (W)
 energy_consumed = 0                                                             # Initializing total energy consumption (J)
 
-                                                          
-
-
-
+# Initialize all lists                                                         
 max_time = 50																	# Number of seconds for simulation 
-
 state = np.zeros((max_time,13))													# State vector holds everything
 torque_hist = np.zeros((max_time-1,3))											# Torque history
 B_hist = np.zeros((max_time-1,3))												# B history
 sun_fluxes = np.zeros((max_time-1,1))											# Sun fluxes
 state[0,:] = init_state															# Set first state entry as the initial state
 
-
+# Main simulation loop
 for i in range (0,max_time-1):
 
 
@@ -90,7 +86,7 @@ for i in range (0,max_time-1):
     m_value = -np.multiply(m_max,np.sign(B_dot))
     torque = np.cross(m_value,B_body)
     
-    #check if we need to turn off the controller
+    #check if we need to turn off the controller due to successful detumbling
     if np.linalg.norm(state[i,6:9]) < np.deg2rad(3):                                           
         m_max = np.array([0,0,0])
         
@@ -103,10 +99,9 @@ for i in range (0,max_time-1):
     args = (mu,J,J_inv,B_eci,m_max,power_max,Sun2Earth,torque)
     state2, test_dict = odeint(HSTdynamics2, state[i,:], tspan, args, full_output=True, rtol = 1e-9,atol = 1e-9)
     
-    #Grab the most recent state
+    #Grab the most recent state to the state matrix
     state[i+1,:] = state2[-1,:]
     
-
     #calculate time for sunlocate
     mjd_prop = 54372.78 + (i/(60*60*24))                                                             
     Sun2Earth=sunlocate(mjd_prop)    
@@ -120,8 +115,7 @@ for i in range (0,max_time-1):
 graph_T = np.linspace(1,max_time, num = max_time)/60
 graph_hist = graph_T[:-1]
 
-
-# second try orbit plot
+# Orbit Plot
 fig = plt.figure()
 ax1 = fig.add_subplot(111, projection='3d')
 
@@ -134,11 +128,7 @@ z = 6378.1 * np.outer(np.ones(np.size(u)), np.cos(v))
 
 # Plot the surface
 ax1.plot_surface(x, y, z, color='b')
-
-
 mpl.rcParams['legend.fontsize'] = 10
-
-
 ax2 = fig.gca(projection='3d')
 theta = np.linspace(-4 * np.pi, 4 * np.pi, 100)
 z = np.linspace(-2, 2, 100)
@@ -147,7 +137,6 @@ x = r * np.sin(theta)
 y = r * np.cos(theta)
 ax2.plot(state[1:,0],state[1:,1],state[1:,2],'r', label='Panda Sat')
 ax2.legend()
-
 plt.show()
 
 
@@ -165,8 +154,6 @@ ax3.set(ylabel='Q3')
 ax4.plot(graph_T,state[:,12])
 ax4.set(xlabel='Time (Minutes)', ylabel='Q4')
 plt.show()
-
-
 
 #Plot Omega
 f,(ax1,ax2,ax3)=plt.subplots(3,1,sharey=True)
@@ -210,22 +197,3 @@ plt.ylabel("Sun Flux (Watts)")
 plt.show()
 
 
-
-
-# Plot Power and Compute Energy Consumption
-#energy_consumed = np.trapz(Pcon_hist, Tspan)
-#print('Energy Consumed = ', energy_consumed)
-#plt.figure()
-#plt.plot(Tspan/60,Pcon_hist,'r')
-#plt.xlabel('Time (min)')
-#plt.ylabel('Power Consumed (W)')
-#plt.title('Power Consumption ')
-#plt.show()
-#
-## Plot Power Generation
-#plt.figure()
-#plt.plot(Tspan/60,Pgen_hist,'r')
-#plt.xlabel('Time (min)')
-#plt.ylabel('Power Generated (W)')
-#plt.title('Power Generation')
-#plt.show()
