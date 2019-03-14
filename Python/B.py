@@ -16,7 +16,7 @@ from sunflux import sunflux
 import pdb
 import matplotlib as mpl
 
-#test comment
+
 plt.close('all')
 
 # Orbital Elements and Parameters
@@ -40,9 +40,6 @@ J_inv = np.linalg.inv(J)                                                        
 r, v = OE2ECI(a, e, i, RAAN, w, anom, mu)                                       # Initial Orbit State Vector
 om = 0.25*np.array([1,-1,-.5])                                                  # Initial Angular Velocity (rad/s)
 q = np.array([0,0,1,0])                                                         # Initial Quaternion, Identity
-#torque = np.array([0,0,0])                                                     # Initial Torque
-#powercon = np.array([0])                                                       # Initial Power Consumption
-#powergen = np.array([0])                                                       # Initial Power Generation
 init_state = np.concatenate((r,v,om,q))                                         # Initial Attitude State Vector
 tspan = [0]                                                                     # Start Time (sec)  
 n = 300                                                                         # Epochs per Orbital Period
@@ -68,13 +65,13 @@ energy_consumed = 0                                                             
 
 
 
-max_time = 5000
+max_time = 50																	# Number of seconds for simulation 
 
-state = np.zeros((max_time,13))
-torque_hist = np.zeros((max_time-1,3))
-B_hist = np.zeros((max_time-1,3))
-sun_fluxes = np.zeros((max_time-1,1))
-state[0,:] = init_state
+state = np.zeros((max_time,13))													# State vector holds everything
+torque_hist = np.zeros((max_time-1,3))											# Torque history
+B_hist = np.zeros((max_time-1,3))												# B history
+sun_fluxes = np.zeros((max_time-1,1))											# Sun fluxes
+state[0,:] = init_state															# Set first state entry as the initial state
 
 
 for i in range (0,max_time-1):
