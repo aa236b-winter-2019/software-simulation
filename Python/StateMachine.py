@@ -7,10 +7,12 @@
 # REMOVE NUMPY FROM DETUMBLE CALCS
 
 import math
+from CPsubroutines import *
+import serial
 #import numpy as np
 
 class State:
-    verbose_flag = True
+    verbose_flag = False
     def run(self):
         assert 0, "run not implemented"
     def next(self, input):
@@ -131,9 +133,10 @@ class BatteryTumbleCheck(State):
 class Detumble(State):
     detumble_second_count = 0
     def run(self, hardware):
+        ser = serial.Serial('/dev/cu.usbserial-1440', 57600, timeout = 1)
         Detumble.detumble_second_count += 1
         TIME = 1 # length of time 
-        m_value = self.calcMValue(hardware)
+        m_value = self.calcMValue(hardware, ser)
         hardware.runMagnetorquer( m_value)
         if State.verbose_flag:
             print('Detumbling the spacecraft for 1 s')
@@ -148,29 +151,37 @@ class Detumble(State):
             return PandaSat.battery_beacon_check
         return PandaSat.detumble
 
-    def calcMValue(self, hardware):
+    def calcMValue(self, hardware, ser):
         imu_reading = hardware.readIMU()
 
-        om0 = imu_reading[1]*(math.pi/180.0)
+        omega = imu_reading[1]*(math.pi/180.0)
         B_body = imu_reading[2]*10**-4
 
 #        B_dot = -np.cross(om0,B_body)               # Compute B_dot
 #        m_value1 = -np.multiply(hardware.m_max,np.sign(B_dot))*np.linalg.norm(np.tanh(om0))
                 
-        m_value=[]       
-        B_dot1 = (om0[1]*B_body[2]-om0[2]*B_body[1])               # Compute B_dot
-        B_dot2 = -(om0[0]*B_body[2]-om0[2]*B_body[1])               # Compute B_dot
-        B_dot3 = (om0[0]*B_body[1]-om0[1]*B_body[0])               # Compute B_dot
+        # m_value=[]       
+        # B_dot1 = (om0[1]*B_body[2]-om0[2]*B_body[1])               # Compute B_dot
+        # B_dot2 = -(om0[0]*B_body[2]-om0[2]*B_body[1])               # Compute B_dot
+        # B_dot3 = (om0[0]*B_body[1]-om0[1]*B_body[0])               # Compute B_dot
 
 
-        tanh1=math.tanh(om0[0])
-        tanh2=math.tanh(om0[1])
-        tanh3=math.tanh(om0[2])
-        tanh_om=math.sqrt(tanh1**2+tanh2**2+tanh3**2)
+        # tanh1=math.tanh(om0[0])
+        # tanh2=math.tanh(om0[1])
+        # tanh3=math.tanh(om0[2])
+        # tanh_om=math.sqrt(tanh1**2+tanh2**2+tanh3**2)
 
-        m_value.append(math.copysign(hardware.m_max[0,0], B_dot1))
-        m_value.append(math.copysign(hardware.m_max[0,1], B_dot2))
-        m_value.append(math.copysign(hardware.m_max[0,2], B_dot3))
+        # m_value.append(math.copysign(hardware.m_max[0,0], B_dot1))
+        # m_value.append(math.copysign(hardware.m_max[0,1], B_dot2))
+        # m_value.append(math.copysign(hardware.m_max[0,2], B_dot3))
+
+        command_to_write = encodestring(([1.2, 1.2, 1.2], omega, B_body, 2, 5), 6)
+
+        writeToSerial(ser, command_to_write)
+        message_out = readFromSerial(ser)
+        arrays = decodestring(message_out)
+
+        m_value = arrays[0]
 
 #        print([m_value])
 #        print( (m_value1 == [m_value]))

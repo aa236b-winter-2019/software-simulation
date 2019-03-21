@@ -1,6 +1,6 @@
 import serial
 import io
-
+from CPsubroutines import *
 
 '''
 feather_port = '/dev/cu.usbserial-1450' #this is the computer to USB/Serial converter serial port
@@ -29,20 +29,29 @@ ser.close()
 #ls /dev/tty.* how to check a mac's serial ports
 import serial
 import time
-from CPsubroutines import *
+import math
+import numpy as np
 
-ser = serial.Serial('/dev/cu.usbserial-1440', 9600, timeout = 1) # ttyACM1 for Arduino board
+ser = serial.Serial('/dev/cu.usbserial-1440', 57600, timeout = 1) # ttyACM1 for Arduino board
 
-readOut = 0   #chars waiting from laser range finder
+#nreadOut = 0   #chars waiting from laser range finder
 
-fakeIMU = ([0, 0, 0], [1.45, 1.45, 1.45], [3.45, 3.45, 3.45])
+# fakeIMU = ([0, 0, 0], [1.45, 1.45, 1.45], [3.45, 3.45, 3.45])
 
 print ("Starting up")
-connected = False
-commandToSend = encodestring(([1.2, 1.2, 1.2], [2.1, 2.1, 2.1], [3.4, 3.4, 3.4], 2, 5), 2) # get the distance in mm
 
 
-writeToSerial(([1.2, 1.2, 1.2], [2.1, 2.1, 2.1], [3.4, 3.4, 3.4], 2, 5), 2)
+omega = np.rad2deg([ 0.24917651, -0.24928519, -0.12525748])
+B_Body = [1.31552664e-05, 2.07796739e-05, 1.70934904e-05]
+command_to_write = encodestring(([1.2, 1.2, 1.2], omega, B_Body, 2, 5), 6)
+
+writeToSerial(ser, command_to_write)
+message_out = readFromSerial(ser)
+
+
+#writeToSerial(([3.1, 3.2, 3.3], [2.1, 2.1, 2.1], [3.4, 3.4, 3.4], 2, 5), 2)
+
+#writeToSerial(([3.1, 3.2, 3.3], [2.1, 2.1, 2.1], [3.4, 3.4, 3.4], 2, 5), 2)
 
 
 '''

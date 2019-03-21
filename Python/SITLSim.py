@@ -136,7 +136,7 @@ class SoftwareSimHardware(Hardware):
         # Rotate B_eci into Satellite Body Frame
         B_body = np.dot(q2rot(q),B_eci)   
 
-        writeToSerial([[0,0,0], om, B_body, 0, 0], 5)
+        
 
         return ([0, 0, 0], om, B_body)
 
@@ -265,6 +265,7 @@ def runSimulationTime(state_machine, max_time):
     while time <= max_time:
         delta_t, _ = state_machine.runStep(None)
         state_machine.hardware.state = propagate(state_machine.hardware, delta_t, str(state_machine.getCurrentState()))
+        print('step')
         state_machine.hardware.time += (delta_t/86400)
         time += delta_t
         state_machine.hardware.time += (delta_t/86400)
@@ -295,6 +296,7 @@ def runSimulationSteps(state_machine, num_steps):
         #print(state_machine.getCurrentState())
         delta_t, _ = state_machine.runStep(None)
         state_machine.hardware.state = propagate(state_machine.hardware, delta_t, str(state_machine.getCurrentState()))
+        #print('step')
         state_machine.hardware.time += (delta_t/86400)
         time += delta_t
         xyz_hist[i, :] = state_machine.hardware.state[0:3]
