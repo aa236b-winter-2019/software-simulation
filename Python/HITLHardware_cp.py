@@ -41,7 +41,7 @@ class Radio(Hardware):
 		self.rfm9x = adafruit_rfm9x.RFM9x(spi, CS, RESET, RADIO_FREQ_MHZ)
 
 	def send_signals(self):
-		self.rfm9x.send(self.send_msg)
+		self.rfm9x.send(str(self.send_msg))
 		return
 
 	def recieve_signals(self):
