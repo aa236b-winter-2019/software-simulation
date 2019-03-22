@@ -62,7 +62,7 @@ power_max = voltage_max*I_max                                                   
 energy_consumed = 0                                                             # Initializing total energy consumption (J)
 
 # Time for simulation                                                        
-max_time = 5																	# Number of seconds for simulation 
+max_time = 5000																	# Number of seconds for simulation 
 
 # Initialize all lists 
 state = np.zeros((max_time,13))													# State vector holds everything

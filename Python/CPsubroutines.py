@@ -10,7 +10,7 @@ def hypertan(q):
 
 def encodestring(inputlist,decimal_places):
     #inputs
-    # Input list of [Array1, Array2, Array3, Time value]
+    # Input list of [Array1, Array2, Array3, Time value, Battery_percentage]
     # Time - scalar, float or int
     #All values will be clipped to specified decimal places
     
