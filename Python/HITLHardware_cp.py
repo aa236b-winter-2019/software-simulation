@@ -26,8 +26,8 @@ class Radio(Hardware):
     """
 
     def __init__(self):
-    	self.send_msg = None
-    	self.recieved_msg = None
+    	self.send_msg = None       # Message to be sent
+    	self.recieved_msg = None   # To store recieved message as string
 		RADIO_FREQ_MHZ   = 433.0  # Frequency of the radio in Mhz
 
 		# Define pins connected to the chip:
@@ -41,14 +41,19 @@ class Radio(Hardware):
 		self.rfm9x = adafruit_rfm9x.RFM9x(spi, CS, RESET, RADIO_FREQ_MHZ)
 
 	def send_signals(self):
-		self.rfm9x.send(str(self.send_msg))
+		self.rfm9x.send(str(self.send_msg)) # Sending message. The signals should be sent in ASCII data 
 		return
 
 	def recieve_signals(self):
 		print('Waiting for packets...')
-	    packet = self.rfm9x.receive()
+	    packet = self.rfm9x.receive()           # receiving signals
+            # Optionally change the receive timeout from its default of 0.5 seconds:
+            #packet = rfm9x.receive(timeout_s=5.0)
 	    if packet is None:
 	        self.recieved_msg = None
 	    else:
-	        self.recieved_msg = str(packet, 'ascii')
+		# Decode to ASCII text 
+		# Raw bytes received needs to be converted to a text format like ASCII
+		# for string processing of data.  
+	        self.recieved_msg = str(packet, 'ascii')  
 	    return 
